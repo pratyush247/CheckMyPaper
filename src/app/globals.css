@@ -1,0 +1,140 @@
+@import "tailwindcss";
+
+/* ----------------------------------------------------------------------------
+   CheckMyPaper design language: "warm paper & ink".
+   A calm, confidence-building companion for a stressed student — not a clinical
+   dashboard. Cream paper, deep ink, one confident violet accent, and honest
+   traffic-light semantics for insight.
+---------------------------------------------------------------------------- */
+
+@theme {
+  --color-paper: #faf6ef;
+  --color-paper-2: #f3ede1;
+  --color-card: #ffffff;
+  --color-ink: #211d1a;
+  --color-ink-soft: #6b6258;
+  --color-line: #e7ddcc;
+
+  --color-violet: #5b4bff;
+  --color-violet-soft: #ece9ff;
+  --color-violet-ink: #3a2fb0;
+
+  --color-good: #15a36b;
+  --color-good-soft: #e3f6ee;
+  --color-warn: #d98a18;
+  --color-warn-soft: #fcf0db;
+  --color-bad: #e0533d;
+  --color-bad-soft: #fbe7e2;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --radius-xl: 1.25rem;
+  --shadow-card: 0 1px 2px rgba(33, 29, 26, 0.04), 0 8px 24px -12px rgba(33, 29, 26, 0.18);
+}
+
+html,
+body {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+
+/* App is a phone-shaped column even on desktop. */
+.app-shell {
+  max-width: 30rem;
+  margin: 0 auto;
+  min-height: 100dvh;
+  position: relative;
+}
+
+/* A faint ruled-paper backdrop for warmth. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image: radial-gradient(circle at 1px 1px, rgba(33, 29, 26, 0.04) 1px, transparent 0);
+  background-size: 22px 22px;
+  pointer-events: none;
+}
+
+@layer components {
+  .card {
+    background: var(--color-card);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-card);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    border-radius: 9999px;
+    padding: 0.85rem 1.25rem;
+    transition: transform 0.08s ease, opacity 0.15s ease, background-color 0.15s ease;
+    user-select: none;
+    cursor: pointer;
+  }
+  .btn:active {
+    transform: scale(0.97);
+  }
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .btn-primary {
+    background: var(--color-violet);
+    color: white;
+  }
+  .btn-ghost {
+    background: var(--color-violet-soft);
+    color: var(--color-violet-ink);
+  }
+  .btn-line {
+    background: transparent;
+    border: 1px solid var(--color-line);
+    color: var(--color-ink);
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    border-radius: 9999px;
+    padding: 0.6rem 0.9rem;
+    border: 1.5px solid var(--color-line);
+    background: var(--color-card);
+    font-weight: 550;
+    font-size: 0.92rem;
+    text-align: left;
+    transition: all 0.12s ease;
+    cursor: pointer;
+  }
+  .chip[data-on="true"] {
+    border-color: var(--color-violet);
+    background: var(--color-violet-soft);
+    color: var(--color-violet-ink);
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(91, 75, 255, 0.35); }
+  70% { box-shadow: 0 0 0 18px rgba(91, 75, 255, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(91, 75, 255, 0); }
+}
+.recording {
+  animation: pulse-ring 1.4s infinite;
+}
