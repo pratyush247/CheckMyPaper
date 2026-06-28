@@ -32,8 +32,9 @@ Use **"Try with a sample"** on the Add-a-paper screen.
 
 Copy `.env.example` to `.env.local` and add:
 
-- `ANTHROPIC_API_KEY` — real paper extraction (vision), per-question diagnosis, and the insight summary.
-- `TRANSCRIBE_API_KEY` (+ optional `TRANSCRIBE_BASE_URL`, `TRANSCRIBE_MODEL`) — real voice transcription via any OpenAI-compatible Whisper endpoint.
+- `DEEPSEEK_OCR_API_KEY` (+ `DEEPSEEK_OCR_BASE_URL`/`DEEPSEEK_OCR_MODEL`) — DeepSeek-OCR reads paper page images into text, via an OpenAI-compatible vision host (OpenRouter / Novita / DeepInfra). PDFs are rasterized to images in the browser first.
+- `DEEPSEEK_API_KEY` — DeepSeek V4 Flash structures the OCR text into topic-tagged questions, and powers per-question diagnosis + the insight summary.
+- `SARVAM_API_KEY` — Sarvam AI speech-to-text for the voice narration (strong on Hindi/English code-mixing). Falls back to `TRANSCRIBE_API_KEY` (OpenAI-compatible Whisper) if Sarvam isn't set.
 
 ## Architecture (v1)
 
@@ -51,4 +52,4 @@ for when you want cross-device sync and phone-OTP login. The local store maps 1:
 
 ## Stack
 
-Next.js 16 (App Router) · React 19 · Tailwind v4 · Anthropic SDK · TypeScript.
+Next.js 16 (App Router) · React 19 · Tailwind v4 · DeepSeek (OCR + V4 Flash) · Sarvam AI (voice) · TypeScript.

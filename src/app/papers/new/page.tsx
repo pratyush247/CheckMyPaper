@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TopBar } from "@/components/ui";
 import { createPaper } from "@/lib/store";
+import { pdfToImageFiles } from "@/lib/pdf";
 import type { ExtractedQuestion } from "@/lib/sampleData";
 
 function defaultName() {
@@ -26,7 +27,18 @@ export default function NewPaperPage() {
     setStage(useSample ? "Loading a sample paper…" : "Reading your paper…");
     try {
       const form = new FormData();
-      if (!useSample) files.forEach((f) => form.append("files", f));
+      if (!useSample) {
+        for (const f of files) {
+          if (f.type === "application/pdf") {
+            setStage("Reading PDF pages…");
+            const pageImages = await pdfToImageFiles(f);
+            pageImages.forEach((img) => form.append("files", img));
+          } else {
+            form.append("files", f);
+          }
+        }
+        setStage("Reading your paper…");
+      }
       const res = await fetch("/api/extract", { method: "POST", body: form });
       if (!res.ok) throw new Error((await res.json()).error || "Extraction failed");
       const { questions } = (await res.json()) as { questions: ExtractedQuestion[] };
