@@ -25,6 +25,17 @@ async function text(messages: ChatMessage[], maxTokens: number): Promise<string>
   return chatComplete(messages, { base: TEXT_BASE, key: TEXT_KEY!, model: TEXT_MODEL, maxTokens });
 }
 
+// ---- Visuals: a separate cheap model good at SVG (configurable) -------------
+// Defaults to OpenRouter; pick any cheap visual-capable model via VISUAL_MODEL.
+const VIS_KEY = process.env.VISUAL_API_KEY || OCR_KEY; // reuse OpenRouter key if shared
+const VIS_BASE = process.env.VISUAL_BASE_URL || "https://openrouter.ai/api/v1";
+const VIS_MODEL = process.env.VISUAL_MODEL || "google/gemini-2.5-flash";
+export const visualEnabled = () => Boolean(VIS_KEY);
+
+async function visualModel(messages: ChatMessage[], maxTokens: number): Promise<string> {
+  return chatComplete(messages, { base: VIS_BASE, key: VIS_KEY!, model: VIS_MODEL, maxTokens, temperature: 0.4 });
+}
+
 export interface ImageInput {
   mediaType: "image/jpeg" | "image/png" | "image/webp";
   data: string; // base64, no data: prefix
@@ -224,4 +235,126 @@ function deterministicSummary(rows: { topic: string; tag: ErrorTag }[]): Summary
         ? "These are fixable habits, not knowledge gaps — slow down and re-check before locking an answer."
         : `Target ${weakTopic || "your most-repeated topic"} next paper and watch the pattern shift.`,
   };
+}
+
+// ---- Visual explanation (doubt answers + battle lessons) -------------------
+export interface VisualInput {
+  prompt: string; // the student's doubt, or a topic to explain
+  context?: string; // optional extra context (e.g. the questions they got wrong)
+  kind: "doubt" | "lesson";
+}
+export interface VisualResult {
+  title: string;
+  explanation: string; // concise, suitable to read aloud
+  svg: string; // self-contained <svg>...</svg>
+}
+
+// Remove anything executable so the SVG is safe even outside the sandbox.
+export function sanitizeSvg(svg: string): string {
+  const start = svg.indexOf("<svg");
+  const end = svg.lastIndexOf("</svg>");
+  if (start === -1 || end === -1) return "";
+  let s = svg.slice(start, end + 6);
+  s = s.replace(/<script[\s\S]*?<\/script>/gi, "");
+  s = s.replace(/\son\w+\s*=\s*"[^"]*"/gi, "");
+  s = s.replace(/\son\w+\s*=\s*'[^']*'/gi, "");
+  s = s.replace(/(href|xlink:href)\s*=\s*("|')\s*javascript:[^"']*\2/gi, "");
+  return s;
+}
+
+export async function generateVisual(input: VisualInput): Promise<VisualResult> {
+  if (!visualEnabled()) return mockVisual(input);
+
+  const ask =
+    input.kind === "doubt"
+      ? `A JEE student asked this doubt out loud: "${input.prompt}"`
+      : `Explain the JEE topic "${input.prompt}" to a student who keeps getting it wrong.`;
+
+  const prompt = `${ask}
+${input.context ? `Context: ${input.context}` : ""}
+
+Produce a clear VISUAL explanation as an SVG diagram (force diagrams, graphs, geometry, labelled steps — whatever fits). Requirements for the SVG:
+- A single self-contained <svg viewBox="0 0 400 320"> ... </svg>, width/height omitted so it scales.
+- Inline styles only. NO <script>, NO external images or fonts.
+- Readable dark text (#1f2937) on a light/transparent background; use colour to highlight.
+- Aim for intuition, not clutter.
+
+Return ONLY JSON: {"title": "<=6 words", "explanation": "2-4 short sentences a tutor would say aloud", "svg": "<svg ...>...</svg>"}`;
+
+  try {
+    const out = parseJson<VisualResult>(await visualModel([{ role: "user", content: prompt }], 4000));
+    const svg = sanitizeSvg(out.svg || "");
+    return {
+      title: out.title || (input.kind === "doubt" ? "Here's the idea" : input.prompt),
+      explanation: out.explanation || "",
+      svg: svg || mockVisual(input).svg,
+    };
+  } catch (err) {
+    console.error("visual failed", err);
+    return mockVisual(input);
+  }
+}
+
+function mockVisual(input: VisualInput): VisualResult {
+  const label = input.prompt.length > 40 ? input.prompt.slice(0, 40) + "…" : input.prompt;
+  return {
+    title: input.kind === "doubt" ? "Here's the idea" : input.prompt,
+    explanation:
+      "This is a sample visual. Add a VISUAL_API_KEY (a cheap OpenRouter model) to generate a real diagram for this " +
+      (input.kind === "doubt" ? "doubt." : "topic."),
+    svg: `<svg viewBox="0 0 400 320" xmlns="http://www.w3.org/2000/svg">
+      <rect x="20" y="20" width="360" height="280" rx="16" fill="#ece9ff" stroke="#5b4bff" stroke-width="2"/>
+      <circle cx="200" cy="130" r="46" fill="#5b4bff" opacity="0.15" stroke="#5b4bff" stroke-width="2"/>
+      <text x="200" y="135" text-anchor="middle" font-size="34">💡</text>
+      <text x="200" y="220" text-anchor="middle" font-size="16" font-weight="700" fill="#1f2937">${escapeXml(label)}</text>
+      <text x="200" y="250" text-anchor="middle" font-size="12" fill="#6b6258">Sample visual — add a key for the real one</text>
+    </svg>`,
+  };
+}
+
+function escapeXml(s: string): string {
+  return s.replace(/[<>&'"]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", "'": "&apos;", '"': "&quot;" }[c]!));
+}
+
+// ---- Quiz generation (Battle Mode) -----------------------------------------
+export interface QuizQuestion {
+  q: string;
+  options: string[]; // exactly 4
+  answer: number; // 0..3
+  explanation: string;
+}
+
+export async function generateQuiz(topic: string, subject: string, n = 10): Promise<QuizQuestion[]> {
+  if (!aiEnabled()) return mockQuiz(topic, n);
+
+  const prompt = `Generate ${n} multiple-choice questions to test mastery of the JEE topic "${topic}" (${subject}).
+- Match typical JEE Main difficulty for this topic.
+- Exactly 4 options each, exactly one correct.
+- Include a one-line explanation of the correct answer.
+Return ONLY a JSON array of objects: {"q": "...", "options": ["a","b","c","d"], "answer": <0-3>, "explanation": "..."}`;
+
+  try {
+    const arr = parseJson<QuizQuestion[]>(await text([{ role: "user", content: prompt }], 6000));
+    return arr
+      .filter((x) => Array.isArray(x.options) && x.options.length === 4)
+      .slice(0, n)
+      .map((x) => ({
+        q: String(x.q || ""),
+        options: x.options.map(String),
+        answer: Math.max(0, Math.min(3, Number(x.answer) || 0)),
+        explanation: String(x.explanation || ""),
+      }));
+  } catch (err) {
+    console.error("quiz failed", err);
+    return mockQuiz(topic, n);
+  }
+}
+
+function mockQuiz(topic: string, n: number): QuizQuestion[] {
+  return Array.from({ length: n }, (_, i) => ({
+    q: `(Sample) ${topic} — practice question ${i + 1}. Add a DEEPSEEK_API_KEY for real, topic-matched questions.`,
+    options: ["Option A", "Option B", "Option C", "Option D"],
+    answer: i % 4,
+    explanation: "Sample explanation — real quizzes are generated by DeepSeek V4 Flash.",
+  }));
 }

@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 
 const tabs = [
   { href: "/", label: "Papers", icon: PaperIcon },
+  { href: "/battle", label: "Battle", icon: BattleIcon },
+  { href: "/ask", label: "Ask", icon: AskIcon },
   { href: "/progress", label: "Progress", icon: ChartIcon },
 ];
 
@@ -19,7 +21,7 @@ export function BottomNav() {
             <Link
               key={t.href}
               href={t.href}
-              className="flex flex-1 flex-col items-center gap-1 py-2.5 text-xs font-semibold"
+              className="flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-semibold"
               style={{ color: active ? "var(--color-violet)" : "var(--color-ink-soft)" }}
             >
               <t.icon active={active} />
@@ -38,6 +40,27 @@ function PaperIcon({ active }: { active: boolean }) {
       <rect x="5" y="3" width="14" height="18" rx="2.5" stroke="currentColor" strokeWidth="1.8"
         fill={active ? "var(--color-violet-soft)" : "none"} />
       <path d="M8.5 8h7M8.5 12h7M8.5 16h4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function BattleIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M12 3l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 16.9 7.2 18l.9-5.4L4.2 8.7l5.4-.8L12 3z"
+        stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"
+        fill={active ? "var(--color-violet-soft)" : "none"} />
+    </svg>
+  );
+}
+
+function AskIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H9l-4 4v-4H6.5"
+        stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"
+        fill={active ? "var(--color-violet-soft)" : "none"} />
+      <path d="M12 7.5v.01M12 10v.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }

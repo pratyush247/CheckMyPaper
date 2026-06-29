@@ -8,6 +8,7 @@ import type {
   Paper,
   PaperInsight,
   Question,
+  Subject,
 } from "./types";
 import type { ExtractedQuestion } from "./sampleData";
 
@@ -20,6 +21,7 @@ const KEYS = {
   questions: "cmp.questions",
   attempts: "cmp.attempts",
   account: "cmp.account",
+  battle: "cmp.battle",
 } as const;
 
 const isBrowser = () => typeof window !== "undefined";
@@ -217,4 +219,71 @@ export function computeProfile(): LearnerProfile {
 
 export function setPaperInsight(paperId: string, insight: PaperInsight) {
   updatePaper(paperId, { insight, status: "done" });
+}
+
+// ---- Battle Mode -----------------------------------------------------------
+
+export interface WeakTopic {
+  topic: string;
+  subject: Subject;
+  wrongCount: number;
+  papers: number;
+}
+
+// Weak topics = topics where the student got questions wrong/guessed, ranked.
+export function getWeakTopics(): WeakTopic[] {
+  const questions = read<Question[]>(KEYS.questions, []);
+  const attempts = read<Attempt[]>(KEYS.attempts, []).filter(
+    (a) => a.state === "wrong" || a.state === "guessed",
+  );
+  const map = new Map<string, { subjectCounts: Record<string, number>; wrong: number; papers: Set<string> }>();
+  for (const a of attempts) {
+    const q = questions.find((x) => x.id === a.questionId);
+    if (!q) continue;
+    const e = map.get(q.topic) ?? { subjectCounts: {}, wrong: 0, papers: new Set<string>() };
+    e.wrong += 1;
+    e.papers.add(a.paperId);
+    e.subjectCounts[q.subject] = (e.subjectCounts[q.subject] || 0) + 1;
+    map.set(q.topic, e);
+  }
+  return [...map.entries()]
+    .map(([topic, e]) => ({
+      topic,
+      subject: (Object.entries(e.subjectCounts).sort((a, b) => b[1] - a[1])[0]?.[0] as Subject) || "Unknown",
+      wrongCount: e.wrong,
+      papers: e.papers.size,
+    }))
+    .sort((a, b) => b.wrongCount - a.wrongCount);
+}
+
+export function getWrongQuestionsForTopic(topic: string): Question[] {
+  const wrongIds = new Set(
+    read<Attempt[]>(KEYS.attempts, [])
+      .filter((a) => a.state === "wrong" || a.state === "guessed")
+      .map((a) => a.questionId),
+  );
+  return read<Question[]>(KEYS.questions, []).filter((q) => q.topic === topic && wrongIds.has(q.id));
+}
+
+export interface BattleResult {
+  bestScore: number;
+  bestTimeMs?: number; // best time among PASSED attempts
+  clearedAt?: number;
+  attempts: number;
+}
+
+export function getBattleProgress(): Record<string, BattleResult> {
+  return read<Record<string, BattleResult>>(KEYS.battle, {});
+}
+
+export function recordBattleResult(topic: string, score: number, timeMs: number, passed: boolean) {
+  const all = getBattleProgress();
+  const prev = all[topic] ?? { bestScore: 0, attempts: 0 };
+  all[topic] = {
+    bestScore: Math.max(prev.bestScore, score),
+    bestTimeMs: passed ? Math.min(prev.bestTimeMs ?? timeMs, timeMs) : prev.bestTimeMs,
+    clearedAt: prev.clearedAt ?? (passed ? Date.now() : undefined),
+    attempts: prev.attempts + 1,
+  };
+  write(KEYS.battle, all);
 }
