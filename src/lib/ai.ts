@@ -22,7 +22,15 @@ const OCR_MODEL = process.env.DEEPSEEK_OCR_MODEL || "deepseek/deepseek-ocr";
 export const ocrEnabled = () => Boolean(OCR_KEY);
 
 async function text(messages: ChatMessage[], maxTokens: number): Promise<string> {
-  return chatComplete(messages, { base: TEXT_BASE, key: TEXT_KEY!, model: TEXT_MODEL, maxTokens });
+  // disableReasoning: deepseek-v4-flash defaults to "thinking" mode, which makes
+  // structured generation (esp. a 10-question quiz) slow enough to time out.
+  return chatComplete(messages, {
+    base: TEXT_BASE,
+    key: TEXT_KEY!,
+    model: TEXT_MODEL,
+    maxTokens,
+    disableReasoning: true,
+  });
 }
 
 // ---- Visuals: a separate cheap model good at SVG (configurable) -------------
@@ -273,13 +281,15 @@ export async function generateVisual(input: VisualInput): Promise<VisualResult> 
   const prompt = `${ask}
 ${input.context ? `Context: ${input.context}` : ""}
 
-Produce a clear VISUAL explanation as an SVG diagram (force diagrams, graphs, geometry, labelled steps — whatever fits). Requirements for the SVG:
-- A single self-contained <svg viewBox="0 0 400 320"> ... </svg>, width/height omitted so it scales.
-- Inline styles only. NO <script>, NO external images or fonts.
-- Readable dark text (#1f2937) on a light/transparent background; use colour to highlight.
-- Aim for intuition, not clutter.
+Make ONE clean DIAGRAM as an SVG that builds intuition (a force diagram, graph, geometry sketch, or simple before/after). Strict rules:
+- A single self-contained <svg viewBox="0 0 400 300"> ... </svg>; omit width/height so it scales.
+- It is a PICTURE, not a slide: use shapes, arrows, and SHORT labels only (1-3 words each). Do NOT put sentences, numbered steps, or paragraphs inside the SVG.
+- Keep every element fully inside the viewBox with ~20px padding. Elements must NOT overlap or sit on top of text. Leave whitespace.
+- Inline styles only. NO <script>, no external images/fonts. Dark text (#1f2937) on transparent; use colour to highlight the key idea.
 
-Return ONLY JSON: {"title": "<=6 words", "explanation": "2-4 short sentences a tutor would say aloud", "svg": "<svg ...>...</svg>"}`;
+Then write the actual teaching in "explanation" — for a 15-year-old, in 2-3 short, simple sentences, plain everyday words, no jargon.
+
+Return ONLY JSON: {"title": "<=6 words", "explanation": "...", "svg": "<svg ...>...</svg>"}`;
 
   try {
     const out = parseJson<VisualResult>(await visualModel([{ role: "user", content: prompt }], 4000));

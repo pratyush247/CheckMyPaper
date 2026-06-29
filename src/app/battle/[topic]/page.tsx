@@ -31,6 +31,7 @@ export default function BattleStagePage() {
 
   const [quiz, setQuiz] = useState<QuizQuestion[] | null>(null);
   const [quizLoading, setQuizLoading] = useState(false);
+  const [quizError, setQuizError] = useState(false);
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState<number[]>([]);
 
@@ -76,20 +77,28 @@ export default function BattleStagePage() {
   const startQuiz = useCallback(async () => {
     setPhase("quiz");
     setQuizLoading(true);
+    setQuizError(false);
+    setQuiz(null);
+    setIdx(0);
+    const ctrl = new AbortController();
+    const timeout = setTimeout(() => ctrl.abort(), 110000);
     try {
       const res = await fetch("/api/quiz", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ topic, subject, n: QUIZ_SIZE }),
+        signal: ctrl.signal,
       });
-      const data = (await res.json()) as { questions: QuizQuestion[] };
+      const data = (await res.json()) as { questions?: QuizQuestion[] };
+      if (!res.ok || !data.questions?.length) throw new Error("no questions");
       setQuiz(data.questions);
       setAnswers(new Array(data.questions.length).fill(-1));
       startRef.current = Date.now();
       setNow(Date.now());
     } catch {
-      setQuiz([]);
+      setQuizError(true);
     } finally {
+      clearTimeout(timeout);
       setQuizLoading(false);
     }
   }, [topic, subject]);
@@ -189,11 +198,25 @@ export default function BattleStagePage() {
 
   // ---- Quiz ----
   if (phase === "quiz") {
-    if (quizLoading || !quiz) {
+    if (quizLoading) {
       return (
-        <main className="flex min-h-[100dvh] flex-col items-center justify-center gap-3 text-center">
+        <main className="flex min-h-[100dvh] flex-col items-center justify-center gap-3 px-8 text-center">
           <div className="text-4xl">⚔️</div>
           <p className="font-bold">Building your 10 questions…</p>
+          <p className="text-sm text-[var(--color-ink-soft)]">Fresh questions on {topic} — about 20–30 seconds.</p>
+        </main>
+      );
+    }
+    if (quizError || !quiz) {
+      return (
+        <main className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 px-8 text-center">
+          <div className="text-4xl">😵‍💫</div>
+          <p className="font-bold">Couldn&apos;t build the quiz</p>
+          <p className="text-sm text-[var(--color-ink-soft)]">The question generator timed out. Give it another go.</p>
+          <div className="flex w-full max-w-xs flex-col gap-2.5">
+            <button onClick={startQuiz} className="btn btn-primary w-full">Try again</button>
+            <button onClick={() => router.push("/battle")} className="btn btn-line w-full">Back to battles</button>
+          </div>
         </main>
       );
     }

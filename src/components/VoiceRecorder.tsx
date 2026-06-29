@@ -1,12 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRecorder } from "@/lib/recorder";
 
-type Phase = "idle" | "recording" | "transcribing";
-
-// Records a short voice clip, sends it for transcription, and surfaces the text
-// in an editable box. If no transcription provider is configured (or mic is
-// blocked), the student simply types their approach instead — the loop still works.
+// Record (→WAV→Sarvam) or type. Used in the narrate flow. The Ask page has its
+// own bottom-bar layout but shares the same useRecorder hook.
 export function VoiceRecorder({
   value,
   onChange,
@@ -14,84 +11,25 @@ export function VoiceRecorder({
   value: string;
   onChange: (text: string) => void;
 }) {
-  const [phase, setPhase] = useState<Phase>("idle");
-  const [seconds, setSeconds] = useState(0);
-  const [hint, setHint] = useState("");
-  const recorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<BlobPart[]>([]);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => () => stopTimer(), []);
-
-  function stopTimer() {
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = null;
-  }
-
-  async function start() {
-    setHint("");
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mr = new MediaRecorder(stream);
-      chunksRef.current = [];
-      mr.ondataavailable = (e) => e.data.size > 0 && chunksRef.current.push(e.data);
-      mr.onstop = async () => {
-        stream.getTracks().forEach((t) => t.stop());
-        await transcribe(new Blob(chunksRef.current, { type: mr.mimeType || "audio/webm" }));
-      };
-      recorderRef.current = mr;
-      mr.start();
-      setPhase("recording");
-      setSeconds(0);
-      timerRef.current = setInterval(() => setSeconds((s) => s + 1), 1000);
-    } catch {
-      setHint("Mic isn't available — just type your approach below.");
-    }
-  }
-
-  function stop() {
-    stopTimer();
-    recorderRef.current?.stop();
-    setPhase("transcribing");
-  }
-
-  async function transcribe(blob: Blob) {
-    try {
-      const form = new FormData();
-      form.append("audio", blob, "clip.webm");
-      const res = await fetch("/api/transcribe", { method: "POST", body: form });
-      const data = (await res.json()) as { transcript: string; enabled?: boolean };
-      if (data.enabled === false) {
-        setHint("Recorded! Transcription isn't set up yet — type what you said below.");
-      } else if (data.transcript) {
-        onChange(value ? `${value} ${data.transcript}` : data.transcript);
-      } else {
-        setHint("Couldn't catch that — try again or type it below.");
-      }
-    } catch {
-      setHint("Couldn't transcribe — type your approach below.");
-    } finally {
-      setPhase("idle");
-    }
-  }
+  const { phase, hint, seconds, start, stop } = useRecorder((t) =>
+    onChange(value ? `${value} ${t}` : t),
+  );
 
   return (
     <div>
-      <div className="flex items-center gap-3">
-        {phase === "recording" ? (
-          <button onClick={stop} className="btn recording w-full bg-[var(--color-bad)] text-white">
-            <StopIcon /> Stop · {seconds}s
-          </button>
-        ) : phase === "transcribing" ? (
-          <button disabled className="btn btn-ghost w-full">
-            <Spinner /> Transcribing…
-          </button>
-        ) : (
-          <button onClick={start} className="btn btn-ghost w-full">
-            <MicIcon /> {value ? "Record more" : "Hold to record your approach"}
-          </button>
-        )}
-      </div>
+      {phase === "recording" ? (
+        <button onClick={stop} className="btn recording w-full bg-[var(--color-bad)] text-white">
+          <StopIcon /> Stop · {seconds}s
+        </button>
+      ) : phase === "transcribing" ? (
+        <button disabled className="btn btn-ghost w-full">
+          <Spinner /> Transcribing…
+        </button>
+      ) : (
+        <button onClick={start} className="btn btn-ghost w-full">
+          <MicIcon /> {value ? "Record more" : "Tap to record your approach"}
+        </button>
+      )}
 
       <textarea
         value={value}

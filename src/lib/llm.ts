@@ -20,6 +20,10 @@ export interface ChatOptions {
   model: string;
   maxTokens?: number;
   temperature?: number;
+  // Turn off "thinking" mode for hybrid models (e.g. deepseek-v4-flash). Without
+  // this, generating long structured output (a 10-question quiz) blows past the
+  // function timeout. OpenRouter ignores it for models that don't reason.
+  disableReasoning?: boolean;
 }
 
 export async function chatComplete(messages: ChatMessage[], opts: ChatOptions): Promise<string> {
@@ -42,6 +46,7 @@ export async function chatComplete(messages: ChatMessage[], opts: ChatOptions): 
       max_tokens: opts.maxTokens ?? 2048,
       temperature: opts.temperature ?? 0.2,
       stream: false,
+      ...(opts.disableReasoning ? { reasoning: { enabled: false } } : {}),
     }),
   });
 
