@@ -7,6 +7,7 @@ const tabs = [
   { href: "/", label: "Papers", icon: PaperIcon },
   { href: "/battle", label: "Battle", icon: BattleIcon },
   { href: "/ask", label: "Ask", icon: AskIcon },
+  { href: "/tutor", label: "Coach", icon: CoachIcon },
   { href: "/progress", label: "Progress", icon: ChartIcon },
 ];
 
@@ -61,6 +62,16 @@ function AskIcon({ active }: { active: boolean }) {
         stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"
         fill={active ? "var(--color-violet-soft)" : "none"} />
       <path d="M12 7.5v.01M12 10v.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function CoachIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M12 4l9 4-9 4-9-4 9-4z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"
+        fill={active ? "var(--color-violet-soft)" : "none"} />
+      <path d="M7 10.5V15c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5v-4.5M21 8v4.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
     </svg>
   );
 }

@@ -44,6 +44,12 @@ async function visualModel(messages: ChatMessage[], maxTokens: number): Promise<
   return chatComplete(messages, { base: VIS_BASE, key: VIS_KEY!, model: VIS_MODEL, maxTokens, temperature: 0.4 });
 }
 
+// Generic grounded chat on the text model (reasoning off). Returns "" when no key.
+export async function deepseekChat(messages: ChatMessage[], maxTokens = 700): Promise<string> {
+  if (!aiEnabled()) return "";
+  return text(messages, maxTokens);
+}
+
 export interface ImageInput {
   mediaType: "image/jpeg" | "image/png" | "image/webp";
   data: string; // base64, no data: prefix

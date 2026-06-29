@@ -272,6 +272,37 @@ export interface BattleResult {
   attempts: number;
 }
 
+// All diagnosed mistakes across papers, shaped for the tutor's RAG sync.
+export interface MistakeRecord {
+  sourceId: string;
+  questionText: string;
+  transcript?: string;
+  topic: string;
+  subject: Subject;
+  errorTag?: string;
+}
+
+export function getAllMistakes(): MistakeRecord[] {
+  const questions = read<Question[]>(KEYS.questions, []);
+  const attempts = read<Attempt[]>(KEYS.attempts, []);
+  const out: MistakeRecord[] = [];
+  for (const a of attempts) {
+    const tag = a.aiTag || a.selfTag;
+    if (!tag) continue; // only diagnosed mistakes
+    const q = questions.find((x) => x.id === a.questionId);
+    if (!q) continue;
+    out.push({
+      sourceId: a.id,
+      questionText: q.text,
+      transcript: a.transcript,
+      topic: q.topic,
+      subject: q.subject,
+      errorTag: tag,
+    });
+  }
+  return out;
+}
+
 export function getBattleProgress(): Record<string, BattleResult> {
   return read<Record<string, BattleResult>>(KEYS.battle, {});
 }
