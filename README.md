@@ -36,6 +36,30 @@ Copy `.env.example` to `.env.local` and add:
 - `DEEPSEEK_API_KEY` — DeepSeek V4 Flash structures the OCR text into topic-tagged questions, and powers per-question diagnosis + the insight summary.
 - `SARVAM_API_KEY` — Sarvam AI speech-to-text for the voice narration (strong on Hindi/English code-mixing). Falls back to `TRANSCRIBE_API_KEY` (OpenAI-compatible Whisper) if Sarvam isn't set.
 
+## Rotating API keys
+
+Keys live as Vercel **encrypted env vars** (production) and in local `.env.local`.
+Env changes only take effect on a **new deployment**.
+
+**OpenRouter key** is used by three vars: `DEEPSEEK_API_KEY`, `DEEPSEEK_OCR_API_KEY`,
+`VISUAL_API_KEY`. **Sarvam key** is one var: `SARVAM_API_KEY`.
+
+1. Create the new key (OpenRouter: https://openrouter.ai/keys · Sarvam: https://dashboard.sarvam.ai).
+2. Update on Vercel — Dashboard → project **checkmypaper** → Settings → Environment
+   Variables → edit each var → Save. Or via CLI, e.g. for the OpenRouter key:
+   ```bash
+   for V in DEEPSEEK_API_KEY DEEPSEEK_OCR_API_KEY VISUAL_API_KEY; do
+     vercel env rm $V production -y
+     printf '%s' "NEW_OPENROUTER_KEY" | vercel env add $V production
+   done
+   # Sarvam:
+   vercel env rm SARVAM_API_KEY production -y
+   printf '%s' "NEW_SARVAM_KEY" | vercel env add SARVAM_API_KEY production
+   ```
+3. Update the same lines in local `.env.local`.
+4. Redeploy: `vercel --prod` (required for changes to go live).
+5. **Revoke the old key** in the provider dashboard.
+
 ## Architecture (v1)
 
 - **Local-first store** (`src/lib/store.ts`) — papers, questions, attempts, and the
