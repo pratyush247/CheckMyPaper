@@ -4,13 +4,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { TopBar, AppLoading, SubjectTag } from "@/components/ui";
 import { VisualAnswer } from "@/components/VisualAnswer";
+import { Leaderboard } from "@/components/Leaderboard";
 import {
+  getAccount,
   getWeakTopics,
   getWrongQuestionsForTopic,
   recordBattleResult,
 } from "@/lib/store";
 import { useMounted } from "@/lib/useStore";
-import { PASS_MARK, QUIZ_SIZE, buildLeaderboard, fmtTime, type Racer } from "@/lib/battle";
+import { PASS_MARK, QUIZ_SIZE, fmtTime } from "@/lib/battle";
+import { submitScore } from "@/lib/multiplayer";
 
 interface Visual { title: string; explanation: string; svg: string }
 interface QuizQuestion { q: string; options: string[]; answer: number; explanation: string }
@@ -117,6 +120,8 @@ export default function BattleStagePage() {
     const timeMs = Date.now() - startRef.current;
     const passed = score >= PASS_MARK;
     recordBattleResult(topic, score, timeMs, passed);
+    const account = getAccount();
+    if (account) submitScore({ phone: account.phone, name: account.name, topic, score, timeMs });
     setResult({ score, timeMs, passed });
     setPhase("result");
   }
@@ -132,7 +137,7 @@ export default function BattleStagePage() {
 
   // ---- Result ----
   if (phase === "result" && result && quiz) {
-    const board = buildLeaderboard(topic, { score: result.score, timeMs: result.timeMs });
+    const account = getAccount();
     return (
       <main className="pb-28">
         <TopBar title={topic} back="/battle" />
@@ -150,14 +155,10 @@ export default function BattleStagePage() {
           <h3 className="mb-2 mt-5 text-sm font-bold uppercase tracking-wide text-[var(--color-ink-soft)]">
             Leaderboard · {topic}
           </h3>
-          <ul className="card divide-y divide-[var(--color-line)]">
-            {board.map((r, i) => (
-              <LeaderRow key={i} rank={i + 1} racer={r} />
-            ))}
-          </ul>
-          <p className="mt-2 text-center text-xs text-[var(--color-ink-soft)]">
-            Rivals are simulated for now — real friends arrive with online play. 👀
-          </p>
+          <Leaderboard
+            topic={topic}
+            me={{ name: account?.name ?? "You", phone: account?.phone ?? "", score: result.score, timeMs: result.timeMs }}
+          />
 
           {/* review */}
           <h3 className="mb-2 mt-5 text-sm font-bold uppercase tracking-wide text-[var(--color-ink-soft)]">Review</h3>
@@ -314,19 +315,3 @@ export default function BattleStagePage() {
   );
 }
 
-function LeaderRow({ rank, racer }: { rank: number; racer: Racer }) {
-  const medal = rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : `${rank}`;
-  return (
-    <li
-      className="flex items-center gap-3 p-3"
-      style={racer.you ? { background: "var(--color-violet-soft)" } : undefined}
-    >
-      <span className="w-6 text-center text-sm font-bold">{medal}</span>
-      <span className={`flex-1 text-sm ${racer.you ? "font-extrabold text-[var(--color-violet-ink)]" : "font-semibold"}`}>
-        {racer.name}
-      </span>
-      <span className="text-sm font-bold tabular-nums">{racer.score}/10</span>
-      <span className="w-12 text-right text-xs tabular-nums text-[var(--color-ink-soft)]">{fmtTime(racer.timeMs)}</span>
-    </li>
-  );
-}

@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { TopBar, AppLoading } from "@/components/ui";
+import { Friends } from "@/components/Friends";
 import { clearAccount, computeProfile, getAccount } from "@/lib/store";
 import { useStoreVersion, useMounted } from "@/lib/useStore";
 import { useTheme } from "@/lib/theme";
@@ -69,6 +70,8 @@ export default function ProfilePage() {
             <Switch on={theme === "dark"} />
           </button>
         </div>
+
+        <Friends phone={account.phone} name={account.name} />
 
         <button onClick={logout} className="btn btn-line mt-5 w-full text-[var(--color-bad)]">
           Log out
