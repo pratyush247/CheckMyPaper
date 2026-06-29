@@ -7,6 +7,7 @@ import { TopBar, EmptyState, AppLoading } from "@/components/ui";
 import { getAllMistakes } from "@/lib/store";
 import { useMounted } from "@/lib/useStore";
 import { syncMistakes, tutorChat, type ChatTurn } from "@/lib/tutor";
+import { FeedbackThumbs } from "@/components/FeedbackThumbs";
 
 const SUGGESTIONS = [
   "Why do I keep losing marks?",
@@ -112,6 +113,12 @@ export default function TutorPage() {
             </div>
           )}
         </div>
+
+        {messages.some((m) => m.role === "assistant") && !thinking && (
+          <div className="mt-3">
+            <FeedbackThumbs target="tutor" label="Was your coach helpful?" />
+          </div>
+        )}
       </div>
 
       <div

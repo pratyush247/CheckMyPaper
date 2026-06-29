@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { BottomNav } from "@/components/BottomNav";
 import { TopBar } from "@/components/ui";
 import { VisualAnswer } from "@/components/VisualAnswer";
+import { FeedbackThumbs } from "@/components/FeedbackThumbs";
 import { useRecorder } from "@/lib/recorder";
 
 interface Visual { title: string; explanation: string; svg: string }
@@ -90,6 +91,7 @@ export default function AskPage() {
               <p className="text-[0.95rem] leading-relaxed">{result.explanation}</p>
             </div>
           )}
+          <FeedbackThumbs target="visual" label="Did this visual help?" />
           <button onClick={reset} className="btn btn-primary w-full">
             Ask another doubt
           </button>

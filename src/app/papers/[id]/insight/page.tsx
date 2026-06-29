@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { useParams } from "next/navigation";
 import { TopBar, TrafficDot, EmptyState, TagBadge, AppLoading } from "@/components/ui";
+import { FeedbackThumbs } from "@/components/FeedbackThumbs";
 import { TAG_MAP } from "@/lib/errorTags";
 import { getAttempts, getPaper, getQuestions } from "@/lib/store";
 import { useStoreVersion, useMounted } from "@/lib/useStore";
@@ -131,7 +132,11 @@ export default function InsightPage() {
           </div>
         )}
 
-        <div className="mt-5 flex flex-col gap-2.5">
+        <div className="mt-4">
+          <FeedbackThumbs target="insight" label="Did this insight ring true?" />
+        </div>
+
+        <div className="mt-3 flex flex-col gap-2.5">
           <Link href="/progress" className="btn btn-primary w-full">
             See my progress over time →
           </Link>

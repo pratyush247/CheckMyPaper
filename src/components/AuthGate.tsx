@@ -13,7 +13,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   const account = mounted ? getAccount() : null;
-  const needsLogin = mounted && !account && path !== "/login";
+  // /admin is for the team reviewing feedback — not gated behind a student login.
+  const needsLogin = mounted && !account && path !== "/login" && !path.startsWith("/admin");
   const needsHome = mounted && !!account && path === "/login";
 
   useEffect(() => {
