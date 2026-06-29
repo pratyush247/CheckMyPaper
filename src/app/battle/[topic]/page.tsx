@@ -203,7 +203,7 @@ export default function BattleStagePage() {
         <main className="flex min-h-[100dvh] flex-col items-center justify-center gap-3 px-8 text-center">
           <div className="text-4xl">⚔️</div>
           <p className="font-bold">Building your 10 questions…</p>
-          <p className="text-sm text-[var(--color-ink-soft)]">Fresh questions on {topic} — about 20–30 seconds.</p>
+          <p className="text-sm text-[var(--color-ink-soft)]">Fresh questions on {topic} — this can take up to a minute.</p>
         </main>
       );
     }
