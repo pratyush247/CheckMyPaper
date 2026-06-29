@@ -9,14 +9,17 @@ export function TopBar({
   title,
   back,
   right,
+  left,
 }: {
   title?: string;
   back?: string | boolean;
   right?: React.ReactNode;
+  left?: React.ReactNode;
 }) {
   const router = useRouter();
   return (
     <header className="sticky top-0 z-20 flex items-center gap-3 bg-[var(--color-paper)]/95 px-4 py-3 backdrop-blur">
+      {left}
       {back ? (
         <button
           onClick={() => (typeof back === "string" ? router.push(back) : router.back())}

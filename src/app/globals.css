@@ -32,6 +32,28 @@
   --shadow-card: 0 1px 2px rgba(33, 29, 26, 0.04), 0 8px 24px -12px rgba(33, 29, 26, 0.18);
 }
 
+/* Dark mode: warm charcoal & off-white — the night version of paper & ink.
+   Overriding the same custom properties re-themes every utility at runtime. */
+html.dark {
+  --color-paper: #16130f;
+  --color-paper-2: #221d18;
+  --color-card: #211c17;
+  --color-ink: #f3ede1;
+  --color-ink-soft: #a89f92;
+  --color-line: #383029;
+
+  --color-violet: #8273ff;
+  --color-violet-soft: #2a2358;
+  --color-violet-ink: #ccc4ff;
+
+  --color-good: #3ecf8e;
+  --color-good-soft: #163a2b;
+  --color-warn: #e7a33c;
+  --color-warn-soft: #3a2c12;
+  --color-bad: #f0775f;
+  --color-bad-soft: #3a1f1a;
+}
+
 html,
 body {
   background-color: var(--color-paper);
@@ -39,6 +61,7 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   overscroll-behavior-y: none;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* App is a phone-shaped column even on desktop. */
@@ -58,6 +81,9 @@ body::before {
   background-image: radial-gradient(circle at 1px 1px, rgba(33, 29, 26, 0.04) 1px, transparent 0);
   background-size: 22px 22px;
   pointer-events: none;
+}
+html.dark body::before {
+  background-image: radial-gradient(circle at 1px 1px, rgba(243, 237, 225, 0.05) 1px, transparent 0);
 }
 
 @layer components {

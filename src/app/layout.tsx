@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { RegisterSW } from "@/components/RegisterSW";
+import { AuthGate } from "@/components/AuthGate";
+import { themeBootstrapScript } from "@/lib/theme";
 
 export const metadata: Metadata = {
   title: "CheckMyPaper — see why you lose marks",
@@ -23,9 +25,13 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body>
-        <div className="app-shell">{children}</div>
+        {/* Apply saved/system theme before paint to avoid a flash. */}
+        <script dangerouslySetInnerHTML={{ __html: themeBootstrapScript }} />
+        <div className="app-shell">
+          <AuthGate>{children}</AuthGate>
+        </div>
         <RegisterSW />
       </body>
     </html>

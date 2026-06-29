@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { BottomNav } from "@/components/BottomNav";
+import { ProfileButton } from "@/components/ProfileButton";
 import { TopBar, TrafficDot, EmptyState, AppLoading } from "@/components/ui";
 import { computeProfile, getPapers } from "@/lib/store";
 import { useStoreVersion, useMounted } from "@/lib/useStore";
@@ -38,6 +39,7 @@ export default function Home() {
   return (
     <main className="pb-28">
       <TopBar
+        left={<ProfileButton />}
         right={
           <Link href="/progress" className="text-sm font-semibold text-[var(--color-violet)]">
             Progress

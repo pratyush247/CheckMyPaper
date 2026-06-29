@@ -4,6 +4,14 @@
 //   - LearnerProfile              => distilled memory (the fingerprint)
 // (Vector/RAG layer is a later version and not modelled here yet.)
 
+// The signed-in student. Local-only for now (no real OTP yet); maps to the
+// Supabase auth user + a profile row when cloud sync is switched on.
+export interface Account {
+  name: string;
+  phone: string; // 10-digit Indian mobile, digits only
+  createdAt: number;
+}
+
 export type Subject = "Physics" | "Chemistry" | "Maths" | "Unknown";
 
 // What the student did with a question. "correct" questions are kept implicit

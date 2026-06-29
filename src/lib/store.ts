@@ -1,6 +1,7 @@
 "use client";
 
 import type {
+  Account,
   Attempt,
   ErrorTag,
   LearnerProfile,
@@ -18,6 +19,7 @@ const KEYS = {
   papers: "cmp.papers",
   questions: "cmp.questions",
   attempts: "cmp.attempts",
+  account: "cmp.account",
 } as const;
 
 const isBrowser = () => typeof window !== "undefined";
@@ -40,6 +42,22 @@ function write<T>(key: string, value: T) {
 
 export const uid = () =>
   `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+
+// ---- Account ---------------------------------------------------------------
+
+export function getAccount(): Account | null {
+  return read<Account | null>(KEYS.account, null);
+}
+
+export function saveAccount(name: string, phone: string): Account {
+  const account: Account = { name: name.trim(), phone: phone.replace(/\D/g, ""), createdAt: Date.now() };
+  write(KEYS.account, account);
+  return account;
+}
+
+export function clearAccount() {
+  write(KEYS.account, null);
+}
 
 // ---- Papers ----------------------------------------------------------------
 
