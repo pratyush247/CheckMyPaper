@@ -29,7 +29,7 @@ async function text(messages: ChatMessage[], maxTokens: number): Promise<string>
 // Defaults to OpenRouter; pick any cheap visual-capable model via VISUAL_MODEL.
 const VIS_KEY = process.env.VISUAL_API_KEY || OCR_KEY; // reuse OpenRouter key if shared
 const VIS_BASE = process.env.VISUAL_BASE_URL || "https://openrouter.ai/api/v1";
-const VIS_MODEL = process.env.VISUAL_MODEL || "google/gemini-2.5-flash";
+const VIS_MODEL = process.env.VISUAL_MODEL || "google/gemini-2.5-flash-lite";
 export const visualEnabled = () => Boolean(VIS_KEY);
 
 async function visualModel(messages: ChatMessage[], maxTokens: number): Promise<string> {
