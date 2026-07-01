@@ -31,3 +31,8 @@ Read context in this order before non-trivial work, escalating only as needed:
   `llm-wiki/*`) without explicit confirmation.
 
 <!-- /SYSTEM_LOCK -->
+
+## Short-Code One-Word Trigger Commands
+- **scaffold**: Instantly read `_setup/global_okf_scaffold.md` from the connected Obsidian vault via your MCP tools and build out the local `llm-wiki/` folder tree cleanly inside this directory.
+- **siphon**: Instantly analyze all project notes, codebase changes, or business strategy updates from this session. Extract the core architectural patterns or business frameworks developed. Convert the output into a clean Google OKF Markdown file, set its frontmatter status to `seed`, and save it directly into `/Users/pratyushsingh/Documents/Second Brain/inbox/raw_learning_cache.md`. Do not attempt to save this note anywhere else.
+  - **NEVER include secrets or private data.** The note must never contain API keys, tokens, passwords, connection strings, project/infra identifiers, environment values, or personal identifiers (names, phone numbers, emails, URLs). Generalize and de-identify — strip project-specific names and describe patterns abstractly. If in doubt about any value, omit it.
