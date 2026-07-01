@@ -84,10 +84,7 @@ Do NOT solve anything. Return ONLY a JSON array of these objects.
 OCR TEXT:
 `;
 
-export async function extractQuestions(
-  images: ImageInput[],
-  _pdfsUnused: unknown[],
-): Promise<ExtractedQuestion[]> {
+export async function extractQuestions(images: ImageInput[]): Promise<ExtractedQuestion[]> {
   // Need both an OCR provider and a text provider, plus at least one image.
   if (!ocrEnabled() || !aiEnabled() || images.length === 0) {
     return SAMPLE_QUESTIONS;
@@ -220,10 +217,20 @@ function deterministicSummary(rows: { topic: string; tag: ErrorTag }[]): Summary
   const total = rows.length || 1;
   let topTag: ErrorTag = "concept";
   let topN = 0;
-  for (const [t, n] of Object.entries(counts)) if (n! > topN) ((topN = n!), (topTag = t as ErrorTag));
+  for (const [t, n] of Object.entries(counts)) {
+    if (n! > topN) {
+      topN = n!;
+      topTag = t as ErrorTag;
+    }
+  }
   let weakTopic = "";
   let wN = 0;
-  for (const [t, n] of Object.entries(topicCounts)) if (n > wN) ((wN = n), (weakTopic = t));
+  for (const [t, n] of Object.entries(topicCounts)) {
+    if (n > wN) {
+      wN = n;
+      weakTopic = t;
+    }
+  }
 
   const share = Math.round((topN / total) * 100);
   const conceptHeavy = (counts.concept || 0) / total > 0.4;

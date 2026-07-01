@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const questions = await extractQuestions(images, []);
+    const questions = await extractQuestions(images);
     return NextResponse.json({ questions });
   } catch (err) {
     console.error("extract error", err);
