@@ -52,6 +52,25 @@ export function Leaderboard({ topic, me }: { topic: string; me: Me }) {
         </div>
       )}
 
+      {racers && (() => {
+        const idx = racers.findIndex((r) => r.you);
+        if (idx < 0) return null;
+        const pct = Math.max(1, Math.round(((idx + 1) / racers.length) * 100));
+        return (
+          <div className="mb-3 flex items-center justify-between rounded-[var(--radius-xl)] bg-[var(--color-violet)] p-4 text-white shadow-[var(--shadow-pop-violet)]">
+            <div>
+              <p className="text-[0.68rem] font-extrabold uppercase tracking-wider opacity-80">Your rank</p>
+              <p className="font-display text-3xl font-bold leading-none">#{idx + 1}</p>
+              <p className="mt-1 text-xs opacity-85">{me.score}/10 · {fmtTime(me.timeMs)}</p>
+            </div>
+            <div className="text-right">
+              <p className="font-display text-2xl font-bold leading-none">Top {pct}%</p>
+              <p className="mt-1 text-xs opacity-85">of {racers.length} here</p>
+            </div>
+          </div>
+        );
+      })()}
+
       {racers === null ? (
         <div className="card p-6 text-center text-sm text-[var(--color-ink-soft)]">Loading leaderboard…</div>
       ) : (

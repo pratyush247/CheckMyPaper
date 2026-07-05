@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { BottomNav } from "@/components/BottomNav";
 import { ProfileButton } from "@/components/ProfileButton";
-import { TopBar, TrafficDot, EmptyState, AppLoading } from "@/components/ui";
-import { computeProfile, getPapers } from "@/lib/store";
+import { Tile } from "@/components/Tile";
+import { TopBar, TrafficDot, AppLoading } from "@/components/ui";
+import { computeProfile, getAccount, getPapers } from "@/lib/store";
 import { useStoreVersion, useMounted } from "@/lib/useStore";
 import type { Paper } from "@/lib/types";
 
@@ -14,77 +15,79 @@ function paperHref(p: Paper) {
   if (p.status === "narrating") return `/papers/${p.id}/narrate`;
   return `/papers/${p.id}/triage`;
 }
-
 function statusLabel(p: Paper) {
-  switch (p.status) {
-    case "done":
-      return "Reviewed";
-    case "narrating":
-      return "Talk in progress";
-    default:
-      return "Ready to review";
-  }
+  return p.status === "done" ? "Reviewed" : p.status === "narrating" ? "Talk in progress" : "Ready to review";
 }
+const TAG_LABEL: Record<string, string> = {
+  concept: "concept gaps",
+  calc_slip: "calculation slips",
+  misread: "misreading questions",
+  wrong_method: "wrong methods",
+  time: "time pressure",
+  second_guess: "second-guessing",
+};
 
 export default function Home() {
   const v = useStoreVersion();
   const mounted = useMounted();
   const papers = useMemo(() => getPapers(), [v]);
   const profile = useMemo(() => computeProfile(), [v]);
-  const hasData = profile.totalDiagnosed > 0;
-  const paperCount = profile.papersLogged || profile.history.length;
+  const account = useMemo(() => getAccount(), [v]);
 
   if (!mounted) return <AppLoading />;
+
+  const firstName = (account?.name || "there").split(" ")[0];
+  const topTag = (Object.entries(profile.tagTotals).sort((a, b) => (b[1] || 0) - (a[1] || 0))[0]?.[0]) as string | undefined;
+  const paperCount = profile.papersLogged || profile.history.length;
 
   return (
     <main className="pb-28">
       <TopBar
         left={<ProfileButton />}
-        right={
-          <Link href="/progress" className="text-sm font-semibold text-[var(--color-violet)]">
-            Progress
-          </Link>
-        }
+        title={`Hey ${firstName} 👋`}
       />
 
       <div className="px-4">
-        <h1 className="text-[1.7rem] font-extrabold leading-tight tracking-tight">
-          See <span className="text-[var(--color-violet)]">why</span> you lose marks.
-        </h1>
-        <p className="mt-1 text-sm text-[var(--color-ink-soft)]">
-          Scan a mock, talk through what tripped you up, and your patterns get clearer every paper.
+        <p className="mb-4 text-sm text-[var(--color-ink-soft)]">
+          What do you want to sharpen today?
         </p>
 
-        {hasData && profile.history[0]?.dominantTag && (
-          <Link href="/progress" className="card mt-4 block p-4">
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-[var(--color-ink-soft)]">
-              <TrafficDot light="amber" /> Your pattern so far
+        {/* Feature grid */}
+        <div className="grid grid-cols-2 gap-3">
+          <Tile color="yellow" emoji="📄" label="Scan" value="Add paper" caption="Snap a mock & diagnose it" href="/papers/new" />
+          <Tile color="lime" emoji="⚔️" label="Play" value="Battle" caption="Beat your weak topics" href="/battle" />
+          <Tile color="purple" emoji="🧠" label="Ask" value="Coach" caption="Chat with your mistakes" href="/tutor" />
+          <Tile color="sky" emoji="📊" label="Stats" value="Progress" caption="See your patterns grow" href="/progress" />
+        </div>
+
+        {/* Pattern highlight */}
+        {profile.totalDiagnosed > 0 && topTag && (
+          <Link href="/progress" className="mt-3 block">
+            <div className="tile tile-orange">
+              <div className="flex items-center gap-2 text-[0.7rem] font-extrabold uppercase tracking-wider opacity-80">
+                <TrafficDot light="amber" /> Your pattern so far
+              </div>
+              <p className="mt-1.5 text-[0.98rem] font-bold leading-snug">
+                Across {paperCount} paper{paperCount === 1 ? "" : "s"}, your top leak is {TAG_LABEL[topTag] || topTag}. Tap to see the full picture →
+              </p>
             </div>
-            <p className="mt-1.5 text-[0.95rem] font-semibold leading-snug">
-              Across {paperCount} paper{paperCount === 1 ? "" : "s"}, your most common slip is{" "}
-              {topTagLabel(profile)}. Tap to see the full picture →
-            </p>
           </Link>
         )}
 
-        <Link href="/papers/new" className="btn btn-primary mt-4 w-full text-base">
-          <PlusIcon /> Add a paper
-        </Link>
-      </div>
-
-      <section className="mt-7 px-4">
-        <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-[var(--color-ink-soft)]">
-          Your papers
-        </h2>
+        {/* Recent papers */}
+        <div className="mt-7 flex items-center justify-between">
+          <h2 className="text-sm font-extrabold uppercase tracking-wide text-[var(--color-ink-soft)]">Your papers</h2>
+          <Link href="/papers/new" className="text-sm font-bold text-[var(--color-violet)]">+ Add</Link>
+        </div>
 
         {papers.length === 0 ? (
-          <EmptyState
-            emoji="📄"
-            title="No papers yet"
-            body="Add your first mock test to start spotting your patterns."
-          />
+          <div className="card mt-2 p-5 text-center">
+            <p className="text-3xl">📄</p>
+            <p className="mt-1 font-bold">No papers yet</p>
+            <p className="text-sm text-[var(--color-ink-soft)]">Tap a tile above to add your first mock.</p>
+          </div>
         ) : (
-          <ul className="flex flex-col gap-2.5">
+          <ul className="mt-2 flex flex-col gap-2.5">
             {papers.map((p) => (
               <li key={p.id}>
                 <Link href={paperHref(p)} className="card flex items-center gap-3 p-4">
@@ -93,9 +96,7 @@ export default function Home() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-bold">{p.name}</p>
-                    <p className="text-xs text-[var(--color-ink-soft)]">
-                      {p.questionCount} questions · {statusLabel(p)}
-                    </p>
+                    <p className="text-xs text-[var(--color-ink-soft)]">{p.questionCount} questions · {statusLabel(p)}</p>
                   </div>
                   {p.insight && <TrafficDot light={p.insight.light} size={14} />}
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-[var(--color-ink-soft)]">
@@ -106,32 +107,9 @@ export default function Home() {
             ))}
           </ul>
         )}
-      </section>
+      </div>
 
       <BottomNav />
     </main>
-  );
-}
-
-function topTagLabel(profile: ReturnType<typeof computeProfile>) {
-  const entries = Object.entries(profile.tagTotals);
-  if (entries.length === 0) return "—";
-  entries.sort((a, b) => (b[1] || 0) - (a[1] || 0));
-  const labels: Record<string, string> = {
-    concept: "concept gaps",
-    calc_slip: "calculation slips",
-    misread: "misreading questions",
-    wrong_method: "wrong methods",
-    time: "time pressure",
-    second_guess: "second-guessing",
-  };
-  return labels[entries[0][0]] || entries[0][0];
-}
-
-function PlusIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-    </svg>
   );
 }

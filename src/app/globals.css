@@ -1,57 +1,59 @@
 @import "tailwindcss";
 
 /* ----------------------------------------------------------------------------
-   CheckMyPaper design language: "warm paper & ink".
-   A calm, confidence-building companion for a stressed student — not a clinical
-   dashboard. Cream paper, deep ink, one confident violet accent, and honest
-   traffic-light semantics for insight.
+   "QuizOn" design language: playful purple + mint.
+   Light lavender canvas, white rounded cards, one confident purple accent, and
+   a green go-action CTA. Retuned tokens re-skin every component at once.
 ---------------------------------------------------------------------------- */
 
 @theme {
-  --color-paper: #faf6ef;
-  --color-paper-2: #f3ede1;
+  --color-paper: #f5f2fd;
+  --color-paper-2: #eae4fb;
   --color-card: #ffffff;
-  --color-ink: #211d1a;
-  --color-ink-soft: #6b6258;
-  --color-line: #e7ddcc;
+  --color-ink: #241b3d;
+  --color-ink-soft: #5a527e; /* ≥4.5:1 on the lavender canvas */
+  --color-line: #e9e2f9;
 
-  --color-violet: #5b4bff;
-  --color-violet-soft: #ece9ff;
-  --color-violet-ink: #3a2fb0;
+  --color-violet: #7c3aed;
+  --color-violet-soft: #ede9fe;
+  --color-violet-ink: #6d28d9;
 
-  --color-good: #15a36b;
-  --color-good-soft: #e3f6ee;
-  --color-warn: #d98a18;
-  --color-warn-soft: #fcf0db;
-  --color-bad: #e0533d;
-  --color-bad-soft: #fbe7e2;
+  --color-good: #22c55e;
+  --color-good-soft: #dcfce7;
+  --color-warn: #f59e0b;
+  --color-warn-soft: #fef3c7;
+  --color-bad: #ef4444;
+  --color-bad-soft: #fee2e2;
 
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-fredoka), var(--font-jakarta), sans-serif;
 
-  --radius-xl: 1.25rem;
-  --shadow-card: 0 1px 2px rgba(33, 29, 26, 0.04), 0 8px 24px -12px rgba(33, 29, 26, 0.18);
+  --radius-xl: 1.5rem;
+  --shadow-card: 0 1px 2px rgba(80, 40, 160, 0.04), 0 10px 24px -14px rgba(80, 40, 160, 0.28);
+  --shadow-pop: 0 8px 18px -6px rgba(34, 197, 94, 0.5);
+  --shadow-pop-violet: 0 8px 20px -6px rgba(124, 58, 237, 0.45);
 }
 
-/* Dark mode: warm charcoal & off-white — the night version of paper & ink.
-   Overriding the same custom properties re-themes every utility at runtime. */
+/* Dark mode: deep purple night. Overriding the same custom properties
+   re-themes every utility at runtime. */
 html.dark {
-  --color-paper: #16130f;
-  --color-paper-2: #221d18;
-  --color-card: #211c17;
-  --color-ink: #f3ede1;
-  --color-ink-soft: #a89f92;
-  --color-line: #383029;
+  --color-paper: #17122b;
+  --color-paper-2: #221a3f;
+  --color-card: #221a3f;
+  --color-ink: #f1edfb;
+  --color-ink-soft: #a99fce;
+  --color-line: #362b58;
 
-  --color-violet: #8273ff;
-  --color-violet-soft: #2a2358;
-  --color-violet-ink: #ccc4ff;
+  --color-violet: #a78bfa;
+  --color-violet-soft: #2e2456;
+  --color-violet-ink: #cdbcff;
 
-  --color-good: #3ecf8e;
-  --color-good-soft: #163a2b;
-  --color-warn: #e7a33c;
+  --color-good: #34d399;
+  --color-good-soft: #10362a;
+  --color-warn: #fbbf24;
   --color-warn-soft: #3a2c12;
-  --color-bad: #f0775f;
-  --color-bad-soft: #3a1f1a;
+  --color-bad: #f87171;
+  --color-bad-soft: #3a1f1f;
 }
 
 html,
@@ -72,18 +74,41 @@ body {
   position: relative;
 }
 
-/* A faint ruled-paper backdrop for warmth. */
+/* Soft corner glow — violet up top, mint below — gives the canvas depth
+   instead of a flat wash. Static (reduced-motion safe). */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
   z-index: -1;
-  background-image: radial-gradient(circle at 1px 1px, rgba(33, 29, 26, 0.04) 1px, transparent 0);
-  background-size: 22px 22px;
   pointer-events: none;
+  background:
+    radial-gradient(58% 44% at 100% 0%, rgba(124, 58, 237, 0.1), transparent 70%),
+    radial-gradient(54% 40% at 0% 100%, rgba(34, 197, 94, 0.08), transparent 70%);
 }
 html.dark body::before {
-  background-image: radial-gradient(circle at 1px 1px, rgba(243, 237, 225, 0.05) 1px, transparent 0);
+  background:
+    radial-gradient(58% 44% at 100% 0%, rgba(167, 139, 250, 0.18), transparent 70%),
+    radial-gradient(54% 40% at 0% 100%, rgba(52, 211, 153, 0.1), transparent 70%);
+}
+
+/* Rounded display face for titles; clean geometric UI face everywhere else. */
+h1,
+h2 {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-violet);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 @layer components {
@@ -102,20 +127,25 @@ html.dark body::before {
     font-weight: 600;
     border-radius: 9999px;
     padding: 0.85rem 1.25rem;
-    transition: transform 0.08s ease, opacity 0.15s ease, background-color 0.15s ease;
+    transition: transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.15s ease, opacity 0.15s ease, filter 0.15s ease;
     user-select: none;
     cursor: pointer;
   }
   .btn:active {
-    transform: scale(0.97);
+    transform: translateY(1px) scale(0.99);
   }
   .btn:disabled {
     opacity: 0.45;
     cursor: not-allowed;
+    box-shadow: none;
   }
   .btn-primary {
-    background: var(--color-violet);
+    background: linear-gradient(180deg, color-mix(in oklab, white 16%, var(--color-good)), var(--color-good));
     color: white;
+    box-shadow: var(--shadow-pop);
+  }
+  .btn-primary:active {
+    box-shadow: 0 3px 10px -5px rgba(34, 197, 94, 0.5);
   }
   .btn-ghost {
     background: var(--color-violet-soft);
@@ -146,6 +176,27 @@ html.dark body::before {
     background: var(--color-violet-soft);
     color: var(--color-violet-ink);
   }
+
+  /* Colorful widget tiles (reference: reader-stats). Dark ink on vivid pastel —
+     high contrast, playful, consistent in light + dark app themes. */
+  .tile {
+    position: relative;
+    border-radius: var(--radius-xl);
+    padding: 1.05rem 1.1rem;
+    color: #1a1631;
+    box-shadow: 0 10px 24px -16px rgba(30, 20, 60, 0.5);
+    overflow: hidden;
+  }
+  .tile-yellow { background: #ffd24a; }
+  .tile-orange { background: #ff9366; }
+  .tile-lime   { background: #bfe86a; }
+  .tile-purple { background: #cdb4ff; }
+  .tile-sky    { background: #7ed7f0; }
+  .tile-pink   { background: #f7a6c9; }
+}
+
+.font-display {
+  font-family: var(--font-display);
 }
 
 .no-scrollbar::-webkit-scrollbar {
@@ -157,9 +208,9 @@ html.dark body::before {
 }
 
 @keyframes pulse-ring {
-  0% { box-shadow: 0 0 0 0 rgba(91, 75, 255, 0.35); }
-  70% { box-shadow: 0 0 0 18px rgba(91, 75, 255, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(91, 75, 255, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.35); }
+  70% { box-shadow: 0 0 0 18px rgba(124, 58, 237, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0); }
 }
 .recording {
   animation: pulse-ring 1.4s infinite;
