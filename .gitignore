@@ -44,3 +44,8 @@ next-env.d.ts
 # local test artifacts
 .playwright-mcp/
 *.local.png
+
+# Local preview screenshots + agent scratch (session artifacts)
+/*.png
+/*.jpeg
+/.codex/
