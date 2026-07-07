@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { BottomNav } from "@/components/BottomNav";
+import { useRouter } from "next/navigation";
 import { TopBar, EmptyState, AppLoading } from "@/components/ui";
 import { getAllMistakes } from "@/lib/store";
 import { useMounted } from "@/lib/useStore";
@@ -16,8 +16,26 @@ const SUGGESTIONS = [
 ];
 
 export default function TutorPage() {
+  const router = useRouter();
   const mounted = useMounted();
   const mistakeCount = useMemo(() => (mounted ? getAllMistakes().length : 0), [mounted]);
+
+  // Edge-swipe-back: a rightward drag (from the left area) pops the route,
+  // matching the top-left back arrow. Chat pages hide the bottom nav.
+  const swipeStart = useRef<{ x: number; y: number } | null>(null);
+  const onTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    swipeStart.current = { x: t.clientX, y: t.clientY };
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    const s = swipeStart.current;
+    swipeStart.current = null;
+    if (!s) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - s.x;
+    const dy = t.clientY - s.y;
+    if (s.x < 60 && dx > 70 && Math.abs(dy) < 50) router.back();
+  };
 
   const [ready, setReady] = useState(false);
   const [configured, setConfigured] = useState<boolean | null>(null);
@@ -55,8 +73,8 @@ export default function TutorPage() {
 
   if (mistakeCount === 0) {
     return (
-      <main className="pb-28">
-        <TopBar title="Your Coach 🧠" />
+      <main className="pb-6" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+        <TopBar title="Your Coach 🧠" back />
         <EmptyState
           emoji="🧠"
           title="Nothing to coach yet"
@@ -65,14 +83,13 @@ export default function TutorPage() {
         <div className="px-4">
           <Link href="/" className="btn btn-primary w-full">Go review a paper</Link>
         </div>
-        <BottomNav />
       </main>
     );
   }
 
   return (
-    <main className="flex h-[100dvh] flex-col">
-      <TopBar title="Your Coach 🧠" />
+    <main className="flex h-[100dvh] flex-col" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      <TopBar title="Your Coach 🧠" back />
 
       <div ref={scrollRef} className="no-scrollbar flex-1 overflow-y-auto px-4 pb-4">
         {messages.length === 0 && (
@@ -123,7 +140,7 @@ export default function TutorPage() {
 
       <div
         className="border-t border-[var(--color-line)] bg-[var(--color-paper)]/95 p-3 backdrop-blur"
-        style={{ paddingBottom: "calc(0.75rem + 64px + env(safe-area-inset-bottom))" }}
+        style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
       >
         <div className="flex items-end gap-2">
           <textarea
@@ -152,8 +169,6 @@ export default function TutorPage() {
           </button>
         </div>
       </div>
-
-      <BottomNav />
     </main>
   );
 }

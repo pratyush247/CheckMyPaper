@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { RecPhase } from "@/lib/recorder";
 
 const tabs = [
   { href: "/", label: "Papers", icon: PaperIcon },
@@ -11,23 +12,50 @@ const tabs = [
   { href: "/progress", label: "Progress", icon: ChartIcon },
 ] as const;
 
-export function BottomNav() {
+// When `mic` is passed (only on the Ask page), the centre FAB becomes the live
+// voice recorder: white, breathing to invite a tap, pulsing red while recording,
+// with a floating status label. Everywhere else it stays a link to /ask.
+export type MicControl = { phase: RecPhase; seconds: number; onToggle: () => void; disabled?: boolean };
+
+export function BottomNav({ mic }: { mic?: MicControl } = {}) {
   const path = usePathname();
   const askActive = path.startsWith("/ask");
   return (
     <nav className="fixed bottom-0 left-1/2 z-30 w-full max-w-[30rem] -translate-x-1/2 border-t border-[var(--color-line)] bg-[var(--color-paper)]/95 backdrop-blur">
       <div className="flex items-end justify-around pb-[env(safe-area-inset-bottom)]">
-        {tabs.map((t, i) =>
+        {tabs.map((t) =>
           t === null ? (
-            <div key="fab" className="flex flex-1 justify-center">
-              <Link
-                href="/ask"
-                aria-label="Ask a doubt by voice"
-                className="btn-primary -mt-6 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-[var(--shadow-pop)] ring-4 ring-[var(--color-paper)] transition-transform active:scale-95"
-                style={askActive ? { filter: "brightness(1.05)" } : undefined}
-              >
-                <MicIcon />
-              </Link>
+            <div key="fab" className="relative flex flex-1 justify-center">
+              {mic ? (
+                <>
+                  {mic.phase !== "idle" && (
+                    <span className="pointer-events-none absolute -top-12 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-[var(--color-ink)] px-3 py-1 text-[11px] font-semibold text-[var(--color-card)] shadow-[var(--shadow-pop)]">
+                      {mic.phase === "recording" ? `● ${mic.seconds}s · tap to stop` : "Transcribing…"}
+                    </span>
+                  )}
+                  <button
+                    onClick={mic.onToggle}
+                    disabled={mic.disabled || mic.phase === "transcribing"}
+                    aria-label={mic.phase === "recording" ? "Stop recording" : "Start recording"}
+                    className={`-mt-5 mb-2.5 flex h-14 w-14 items-center justify-center rounded-full ring-4 ring-[var(--color-paper)] transition-transform active:scale-95 disabled:opacity-60 ${
+                      mic.phase === "recording"
+                        ? "fab-recording bg-[var(--color-bad)] text-white"
+                        : "btn-primary fab-idle"
+                    }`}
+                  >
+                    {mic.phase === "recording" ? <StopIcon /> : mic.phase === "transcribing" ? <SpinnerIcon /> : <MicIcon />}
+                  </button>
+                </>
+              ) : (
+                <Link
+                  href="/ask"
+                  aria-label="Ask a doubt by voice"
+                  className="btn-primary -mt-5 mb-2.5 flex h-14 w-14 items-center justify-center rounded-full shadow-[var(--shadow-pop)] ring-4 ring-[var(--color-paper)] transition-transform active:scale-95"
+                  style={askActive ? { filter: "brightness(1.05)" } : undefined}
+                >
+                  <MicIcon />
+                </Link>
+              )}
             </div>
           ) : (
             <Link
@@ -51,6 +79,21 @@ function MicIcon() {
     <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
       <rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor" />
       <path d="M5 11a7 7 0 0 0 14 0M12 18v3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+function StopIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <rect x="6" y="6" width="12" height="12" rx="3" fill="currentColor" />
+    </svg>
+  );
+}
+function SpinnerIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" className="animate-spin" fill="none">
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="3" opacity="0.3" />
+      <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
     </svg>
   );
 }

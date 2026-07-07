@@ -300,7 +300,11 @@ Make ONE clean DIAGRAM as an SVG that builds intuition (a force diagram, graph, 
 - Keep every element fully inside the viewBox with ~20px padding. Elements must NOT overlap or sit on top of text. Leave whitespace.
 - Inline styles only. NO <script>, no external images/fonts. Dark text (#1f2937) on transparent; use colour to highlight the key idea.
 
-Then write the actual teaching in "explanation" — for a 15-year-old, in 2-3 short, simple sentences, plain everyday words, no jargon.
+Then write the actual teaching in "explanation" — in HINGLISH (natural Hindi-English mix written in Roman/English script, the way a friendly Indian tutor explains to a student). Keep it SIMPLE and STRUCTURED, on separate lines, ALWAYS with a real-life example:
+"Idea: <the core concept in one simple line>
+Jaise: <ek roz-marra (everyday) example that makes it click>
+Isliye: <why this matters for the answer, one line>"
+Use short sentences and plain everyday words, minimal jargon. Keep technical terms (like force, velocity) in English. 3-4 short lines total.
 
 Return ONLY JSON: {"title": "<=6 words", "explanation": "...", "svg": "<svg ...>...</svg>"}`;
 

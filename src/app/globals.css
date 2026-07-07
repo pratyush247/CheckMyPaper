@@ -1,59 +1,62 @@
 @import "tailwindcss";
 
 /* ----------------------------------------------------------------------------
-   "QuizOn" design language: playful purple + mint.
-   Light lavender canvas, white rounded cards, one confident purple accent, and
-   a green go-action CTA. Retuned tokens re-skin every component at once.
+   "Liftoff" design language: agentic, monochrome, minimal.
+   Extracted from antigravity.google — a near-white surface, near-black ink,
+   a Material-3 grey ramp for hierarchy, hairline outlines, and ONE restrained
+   blue accent. Pill actions, calm cards, generous space. Retuned tokens
+   re-skin every component at once. `--color-violet` is kept as the accent name
+   for compatibility, but it is now the single blue accent, not purple.
 ---------------------------------------------------------------------------- */
 
 @theme {
-  --color-paper: #f5f2fd;
-  --color-paper-2: #eae4fb;
-  --color-card: #ffffff;
-  --color-ink: #241b3d;
-  --color-ink-soft: #5a527e; /* ≥4.5:1 on the lavender canvas */
-  --color-line: #e9e2f9;
+  --color-paper: #f6f7f9;    /* soft grey canvas (surface-container) */
+  --color-paper-2: #eef1f5;  /* raised container */
+  --color-card: #ffffff;     /* surface — cards lift off the canvas */
+  --color-ink: #121317;      /* on-surface, near-black */
+  --color-ink-soft: #5b5e66; /* on-surface-variant; ≥4.5:1 on the canvas */
+  --color-line: #e6e8ec;     /* hairline outline */
 
-  --color-violet: #7c3aed;
-  --color-violet-soft: #ede9fe;
-  --color-violet-ink: #6d28d9;
+  --color-violet: #3279f9;      /* the single blue accent */
+  --color-violet-soft: #eaf1fe; /* faint accent tint (fills, selected states) */
+  --color-violet-ink: #1b5fd9;  /* accent text on light */
 
-  --color-good: #22c55e;
-  --color-good-soft: #dcfce7;
-  --color-warn: #f59e0b;
-  --color-warn-soft: #fef3c7;
-  --color-bad: #ef4444;
-  --color-bad-soft: #fee2e2;
+  --color-good: #1f9d57;
+  --color-good-soft: #e4f4ea;
+  --color-warn: #c98a12;
+  --color-warn-soft: #f6edd7;
+  --color-bad: #d3483f;
+  --color-bad-soft: #fbe7e5;
 
   --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-display: var(--font-fredoka), var(--font-jakarta), sans-serif;
+  --font-display: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
 
   --radius-xl: 1.5rem;
-  --shadow-card: 0 1px 2px rgba(80, 40, 160, 0.04), 0 10px 24px -14px rgba(80, 40, 160, 0.28);
-  --shadow-pop: 0 8px 18px -6px rgba(34, 197, 94, 0.5);
-  --shadow-pop-violet: 0 8px 20px -6px rgba(124, 58, 237, 0.45);
+  --shadow-card: 0 1px 2px rgba(18, 19, 23, 0.04), 0 8px 24px -18px rgba(18, 19, 23, 0.18);
+  --shadow-pop: 0 8px 20px -8px rgba(18, 19, 23, 0.38);
+  --shadow-pop-violet: 0 8px 22px -8px rgba(50, 121, 249, 0.5);
 }
 
-/* Dark mode: deep purple night. Overriding the same custom properties
-   re-themes every utility at runtime. */
+/* Dark mode: neutral charcoal (Antigravity inverse-surface). Overriding the
+   same custom properties re-themes every utility at runtime. */
 html.dark {
-  --color-paper: #17122b;
-  --color-paper-2: #221a3f;
-  --color-card: #221a3f;
-  --color-ink: #f1edfb;
-  --color-ink-soft: #a99fce;
-  --color-line: #362b58;
+  --color-paper: #0e0f12;
+  --color-paper-2: #191b1f;
+  --color-card: #17191d;
+  --color-ink: #f0f1f5;
+  --color-ink-soft: #9aa0ac;
+  --color-line: #262a31;
 
-  --color-violet: #a78bfa;
-  --color-violet-soft: #2e2456;
-  --color-violet-ink: #cdbcff;
+  --color-violet: #5b95ff;
+  --color-violet-soft: #172740;
+  --color-violet-ink: #9cc0ff;
 
-  --color-good: #34d399;
-  --color-good-soft: #10362a;
-  --color-warn: #fbbf24;
-  --color-warn-soft: #3a2c12;
-  --color-bad: #f87171;
-  --color-bad-soft: #3a1f1f;
+  --color-good: #35c07a;
+  --color-good-soft: #12281d;
+  --color-warn: #e3ad3c;
+  --color-warn-soft: #2c2410;
+  --color-bad: #ef6a60;
+  --color-bad-soft: #2e1917;
 }
 
 html,
@@ -74,8 +77,8 @@ body {
   position: relative;
 }
 
-/* Soft corner glow — violet up top, mint below — gives the canvas depth
-   instead of a flat wash. Static (reduced-motion safe). */
+/* Barely-there cool glow in the top corner — a whisper of the accent for
+   depth, not a wash. Calm and monochrome. Static (reduced-motion safe). */
 body::before {
   content: "";
   position: fixed;
@@ -83,20 +86,22 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(58% 44% at 100% 0%, rgba(124, 58, 237, 0.1), transparent 70%),
-    radial-gradient(54% 40% at 0% 100%, rgba(34, 197, 94, 0.08), transparent 70%);
+    radial-gradient(60% 42% at 100% 0%, rgba(50, 121, 249, 0.05), transparent 72%),
+    radial-gradient(52% 38% at 0% 100%, rgba(18, 19, 23, 0.028), transparent 72%);
 }
 html.dark body::before {
   background:
-    radial-gradient(58% 44% at 100% 0%, rgba(167, 139, 250, 0.18), transparent 70%),
-    radial-gradient(54% 40% at 0% 100%, rgba(52, 211, 153, 0.1), transparent 70%);
+    radial-gradient(60% 42% at 100% 0%, rgba(91, 149, 255, 0.1), transparent 72%),
+    radial-gradient(52% 38% at 0% 100%, rgba(255, 255, 255, 0.02), transparent 72%);
 }
 
-/* Rounded display face for titles; clean geometric UI face everywhere else. */
+/* Refined geometric display for titles: tight tracking, lighter weight —
+   the calm, confident feel of the Antigravity headline. */
 h1,
 h2 {
   font-family: var(--font-display);
-  letter-spacing: -0.01em;
+  font-weight: 550;
+  letter-spacing: -0.025em;
 }
 
 :focus-visible {
@@ -139,17 +144,26 @@ h2 {
     cursor: not-allowed;
     box-shadow: none;
   }
+  /* Primary = solid near-black pill (Antigravity "Download"). Inverts in dark:
+     ink is light there, so the button becomes near-white with dark text. */
   .btn-primary {
-    background: linear-gradient(180deg, color-mix(in oklab, white 16%, var(--color-good)), var(--color-good));
-    color: white;
+    background: var(--color-ink);
+    color: var(--color-card);
     box-shadow: var(--shadow-pop);
   }
-  .btn-primary:active {
-    box-shadow: 0 3px 10px -5px rgba(34, 197, 94, 0.5);
+  .btn-primary:hover {
+    filter: brightness(1.12);
   }
+  .btn-primary:active {
+    box-shadow: 0 3px 10px -6px rgba(18, 19, 23, 0.4);
+  }
+  /* Secondary = quiet translucent-grey pill, ink text. */
   .btn-ghost {
-    background: var(--color-violet-soft);
-    color: var(--color-violet-ink);
+    background: color-mix(in srgb, var(--color-ink) 6%, transparent);
+    color: var(--color-ink);
+  }
+  .btn-ghost:hover {
+    background: color-mix(in srgb, var(--color-ink) 10%, transparent);
   }
   .btn-line {
     background: transparent;
@@ -177,22 +191,25 @@ h2 {
     color: var(--color-violet-ink);
   }
 
-  /* Colorful widget tiles (reference: reader-stats). Dark ink on vivid pastel —
-     high contrast, playful, consistent in light + dark app themes. */
+  /* Calm widget tiles: uniform light surfaces with a hairline outline and a
+     whisper of tonal tint. The emoji carries the colour — the surface stays
+     quiet and premium. Fixed light bg + dark ink reads well in both themes. */
   .tile {
     position: relative;
     border-radius: var(--radius-xl);
     padding: 1.05rem 1.1rem;
-    color: #1a1631;
-    box-shadow: 0 10px 24px -16px rgba(30, 20, 60, 0.5);
+    color: #17181c;
+    background: #ffffff;
+    border: 1px solid rgba(18, 19, 23, 0.07);
+    box-shadow: 0 1px 2px rgba(18, 19, 23, 0.03), 0 10px 26px -20px rgba(18, 19, 23, 0.28);
     overflow: hidden;
   }
-  .tile-yellow { background: #ffd24a; }
-  .tile-orange { background: #ff9366; }
-  .tile-lime   { background: #bfe86a; }
-  .tile-purple { background: #cdb4ff; }
-  .tile-sky    { background: #7ed7f0; }
-  .tile-pink   { background: #f7a6c9; }
+  .tile-yellow { background: #fbf6ea; }
+  .tile-orange { background: #fbf0ea; }
+  .tile-lime   { background: #eef5e8; }
+  .tile-purple { background: #eef0fb; }
+  .tile-sky    { background: #e8f2fb; }
+  .tile-pink   { background: #faeef3; }
 }
 
 .font-display {
@@ -208,10 +225,67 @@ h2 {
 }
 
 @keyframes pulse-ring {
-  0% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.35); }
-  70% { box-shadow: 0 0 0 18px rgba(124, 58, 237, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(50, 121, 249, 0.35); }
+  70% { box-shadow: 0 0 0 18px rgba(50, 121, 249, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(50, 121, 249, 0); }
 }
 .recording {
   animation: pulse-ring 1.4s infinite;
+}
+
+/* ---------------------------------------------------------------------------
+   Motion — the calm, expo-eased feel of the Antigravity design language.
+   Everything below is reduced-motion safe (disabled at the bottom).
+--------------------------------------------------------------------------- */
+
+/* Content lifts gently into place (ease-out-expo). */
+@keyframes cmp-fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+.animate-fade-up { animation: cmp-fade-up 0.55s cubic-bezier(0.19, 1, 0.22, 1) both; }
+
+@keyframes cmp-fade-in { from { opacity: 0; } to { opacity: 1; } }
+.animate-fade-in { animation: cmp-fade-in 0.45s ease both; }
+
+/* Staggered children — used on the home grid so tiles cascade in. */
+.stagger > * { animation: cmp-fade-up 0.55s cubic-bezier(0.19, 1, 0.22, 1) both; }
+.stagger > *:nth-child(1) { animation-delay: 0.02s; }
+.stagger > *:nth-child(2) { animation-delay: 0.07s; }
+.stagger > *:nth-child(3) { animation-delay: 0.12s; }
+.stagger > *:nth-child(4) { animation-delay: 0.17s; }
+.stagger > *:nth-child(5) { animation-delay: 0.22s; }
+.stagger > *:nth-child(6) { animation-delay: 0.27s; }
+
+/* Every screen fades in on navigation — one rule, whole-app polish. */
+main { animation: cmp-fade-in 0.4s ease both; }
+
+/* Voice FAB: a soft breathing invite when idle, a strong pulse when recording. */
+@keyframes cmp-fab-breathe {
+  0%, 100% { box-shadow: var(--shadow-pop), 0 0 0 0 rgba(50, 121, 249, 0); }
+  50%      { box-shadow: var(--shadow-pop), 0 0 0 7px rgba(50, 121, 249, 0.12); }
+}
+.fab-idle { animation: cmp-fab-breathe 2.8s ease-in-out infinite; }
+@keyframes cmp-fab-rec {
+  0%   { box-shadow: var(--shadow-pop), 0 0 0 0 rgba(211, 72, 63, 0.5); }
+  70%  { box-shadow: var(--shadow-pop), 0 0 0 15px rgba(211, 72, 63, 0); }
+  100% { box-shadow: var(--shadow-pop), 0 0 0 0 rgba(211, 72, 63, 0); }
+}
+.fab-recording { animation: cmp-fab-rec 1.3s infinite; }
+
+/* Loading skeleton shimmer. */
+@keyframes cmp-shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+.skeleton {
+  background: linear-gradient(90deg, var(--color-paper-2) 25%, var(--color-line) 37%, var(--color-paper-2) 63%);
+  background-size: 200% 100%;
+  animation: cmp-shimmer 1.5s ease infinite;
+  border-radius: var(--radius-xl);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up, .animate-fade-in, .stagger > *, main,
+  .fab-idle, .fab-recording, .skeleton, .recording {
+    animation: none !important;
+  }
+  .animate-fade-up, .stagger > * { opacity: 1; transform: none; }
 }

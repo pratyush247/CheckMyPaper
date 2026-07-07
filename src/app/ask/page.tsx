@@ -18,6 +18,7 @@ export default function AskPage() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const { phase, hint, seconds, toggle } = useRecorder((t) => setDoubt((d) => (d ? `${d} ${t}` : t)));
+  const mic = { phase, seconds, onToggle: toggle, disabled: busy };
 
   async function speak(text: string) {
     try {
@@ -69,26 +70,30 @@ export default function AskPage() {
     setError("");
   }
 
+  const doubtPreview = doubt.trim().length > 70 ? `${doubt.trim().slice(0, 70)}…` : doubt.trim();
+
   // ---- Result view ----
   if (result) {
     return (
       <main className="pb-28">
         <TopBar title="Ask a doubt" />
-        <div className="flex flex-col gap-4 px-4">
-          <h2 className="text-xl font-extrabold leading-tight">{result.title}</h2>
-          <VisualAnswer svg={result.svg} />
+        <div className="flex flex-col gap-4 px-4 pt-1">
+          <h2 className="animate-fade-up text-xl font-bold leading-tight">{result.title}</h2>
+          <div className="animate-fade-up">
+            <VisualAnswer svg={result.svg} />
+          </div>
           {result.explanation && (
-            <div className="card p-4">
+            <div className="card animate-fade-up p-4">
               <div className="mb-2 flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wide text-[var(--color-ink-soft)]">Explanation</span>
                 <button
                   onClick={() => speak(result.explanation)}
-                  className="flex items-center gap-1.5 rounded-full bg-[var(--color-violet-soft)] px-3 py-1 text-xs font-bold text-[var(--color-violet-ink)]"
+                  className="flex items-center gap-1.5 rounded-full bg-[var(--color-violet-soft)] px-3 py-1 text-xs font-bold text-[var(--color-violet-ink)] transition-transform active:scale-95"
                 >
                   {speaking ? "🔊 Playing…" : "🔊 Play"}
                 </button>
               </div>
-              <p className="text-[0.95rem] leading-relaxed">{result.explanation}</p>
+              <p className="whitespace-pre-line text-[0.95rem] leading-relaxed">{result.explanation}</p>
             </div>
           )}
           <FeedbackThumbs target="visual" label="Did this visual help?" />
@@ -101,14 +106,36 @@ export default function AskPage() {
     );
   }
 
+  // ---- Loading view: an obvious "drawing" state so it never feels frozen ----
+  if (busy) {
+    return (
+      <main className="pb-28">
+        <TopBar title="Ask a doubt" />
+        <div className="flex flex-col gap-4 px-4 pt-1">
+          <p className="animate-fade-in text-sm font-medium text-[var(--color-ink-soft)]">
+            Drawing your answer{doubtPreview ? ` for “${doubtPreview}”` : ""} ✨
+          </p>
+          <div className="skeleton h-[300px] w-full" />
+          <div className="card flex flex-col gap-2.5 p-4">
+            <div className="skeleton h-2.5 w-20" />
+            <div className="skeleton h-2.5 w-full" />
+            <div className="skeleton h-2.5 w-11/12" />
+            <div className="skeleton h-2.5 w-2/3" />
+          </div>
+        </div>
+        <BottomNav mic={mic} />
+      </main>
+    );
+  }
+
   // ---- Ask view ----
   return (
-    <main className="pb-56">
+    <main className="pb-28">
       <TopBar title="Ask a doubt" />
-      <div className="px-4">
-        <div className="card mb-4 bg-[var(--color-violet-soft)] p-4">
+      <div className="flex flex-col gap-4 px-4 pt-1">
+        <div className="card animate-fade-up bg-[var(--color-violet-soft)] p-4">
           <p className="text-[0.95rem] font-semibold leading-snug text-[var(--color-violet-ink)]">
-            🎙️ Tap the mic and speak your doubt — get a quick visual that explains it.
+            🎙️ Tap the glowing mic below and speak your doubt — get a quick visual that explains it.
           </p>
           <p className="mt-1 text-xs text-[var(--color-violet-ink)]/80">
             e.g. &ldquo;Why does a rolling ball go slower than a sliding one?&rdquo;
@@ -120,68 +147,27 @@ export default function AskPage() {
           onChange={(e) => setDoubt(e.target.value)}
           rows={4}
           placeholder="Your doubt will appear here — or just type it."
-          className="w-full resize-none rounded-2xl border border-[var(--color-line)] bg-[var(--color-card)] px-4 py-3 text-[0.95rem] outline-none focus:border-[var(--color-violet)]"
+          className="w-full resize-none rounded-2xl border border-[var(--color-line)] bg-[var(--color-card)] px-4 py-3 text-[0.95rem] outline-none transition-colors focus:border-[var(--color-violet)]"
         />
-        {hint && <p className="mt-2 text-xs font-medium text-[var(--color-ink-soft)]">{hint}</p>}
+        {hint && <p className="text-xs font-medium text-[var(--color-ink-soft)]">{hint}</p>}
         {error && (
-          <p className="mt-2 rounded-xl bg-[var(--color-bad-soft)] px-4 py-3 text-sm font-medium text-[var(--color-bad)]">
+          <p className="rounded-xl bg-[var(--color-bad-soft)] px-4 py-3 text-sm font-medium text-[var(--color-bad)]">
             {error}
+          </p>
+        )}
+
+        {doubt.trim() ? (
+          <button onClick={ask} className="btn btn-primary w-full text-base">
+            Show me a visual ✨
+          </button>
+        ) : (
+          <p className="text-center text-xs font-medium text-[var(--color-ink-soft)]">
+            Tap the glowing mic below to speak ↓
           </p>
         )}
       </div>
 
-      {/* Thumb-reachable action bar, just above the nav */}
-      <div
-        className="fixed left-1/2 z-20 w-full max-w-[30rem] -translate-x-1/2 border-t border-[var(--color-line)] bg-[var(--color-paper)]/95 px-4 pt-3 pb-3 backdrop-blur"
-        style={{ bottom: "calc(64px + env(safe-area-inset-bottom))" }}
-      >
-        {doubt.trim() && phase === "idle" && (
-          <button onClick={ask} disabled={busy} className="btn btn-primary mb-3 w-full text-base">
-            {busy ? "Drawing your answer…" : "Show me a visual ✨"}
-          </button>
-        )}
-        <div className="flex flex-col items-center">
-          <button
-            onClick={toggle}
-            disabled={phase === "transcribing" || busy}
-            aria-label={phase === "recording" ? "Stop recording" : "Start recording"}
-            className={`flex h-16 w-16 items-center justify-center rounded-full text-white shadow-[var(--shadow-card)] ${
-              phase === "recording" ? "recording bg-[var(--color-bad)]" : "bg-[var(--color-violet)]"
-            }`}
-          >
-            {phase === "recording" ? <StopIcon /> : phase === "transcribing" ? <Spinner /> : <MicIcon />}
-          </button>
-          <span className="mt-1.5 text-xs font-semibold text-[var(--color-ink-soft)]">
-            {phase === "recording" ? `Recording ${seconds}s · tap to stop` : phase === "transcribing" ? "Transcribing…" : "Tap to speak"}
-          </span>
-        </div>
-      </div>
-
-      <BottomNav />
+      <BottomNav mic={mic} />
     </main>
-  );
-}
-
-function MicIcon() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-      <rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor" />
-      <path d="M5 11a7 7 0 0 0 14 0M12 18v3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
-}
-function StopIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <rect x="6" y="6" width="12" height="12" rx="3" fill="currentColor" />
-    </svg>
-  );
-}
-function Spinner() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" className="animate-spin" fill="none">
-      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="3" opacity="0.3" />
-      <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-    </svg>
   );
 }

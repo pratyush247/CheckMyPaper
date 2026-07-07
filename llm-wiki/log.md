@@ -20,3 +20,5 @@ Append-only. Newest first.
 - `9485e4e` Login, profile, dark mode
 - `00dafcc` Providers → DeepSeek (OCR + V4 Flash) + Sarvam voice
 - `7e5d97f` Initial MVP (scan → triage → narrate → insight → progress)
+- `wip` Redesign UI → Antigravity "Liftoff" language: monochrome + one blue accent, solid-ink pill CTAs, calm tonal tiles, refined light display type. Token-driven re-skin (globals.css + layout fonts + FAB); no page/logic changes. See DESIGN.md
+- `wip` Ask UX: white FAB is now the recorder (breathe/glow idle, red pulse recording, floating status); removed redundant blue mic. Added loading skeleton so visual gen never feels frozen. Hinglish structured explanation (Idea/Jaise/Isliye + example). App-wide motion (fade-in per screen, staggered home grid, reduced-motion safe).

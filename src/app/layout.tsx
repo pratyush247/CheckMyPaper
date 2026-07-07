@@ -1,9 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Fredoka, Plus_Jakarta_Sans } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { RegisterSW } from "@/components/RegisterSW";
 
-const fredoka = Fredoka({ subsets: ["latin"], weight: ["500", "600", "700"], variable: "--font-fredoka", display: "swap" });
+// One clean geometric face for body + display — the refined, minimal feel of
+// the "liftoff" design language. Display weight/tracking is set in globals.css.
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-jakarta", display: "swap" });
 import { AuthGate } from "@/components/AuthGate";
 import { themeBootstrapScript } from "@/lib/theme";
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#faf6ef",
+  themeColor: "#f6f7f9",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -29,7 +30,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${fredoka.variable} ${jakarta.variable}`}>
+    <html lang="en" suppressHydrationWarning className={jakarta.variable}>
       <body>
         {/* Apply saved/system theme before paint to avoid a flash. */}
         <script dangerouslySetInnerHTML={{ __html: themeBootstrapScript }} />

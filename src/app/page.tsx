@@ -53,7 +53,7 @@ export default function Home() {
         </p>
 
         {/* Feature grid */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="stagger grid grid-cols-2 gap-3">
           <Tile color="yellow" emoji="📄" label="Scan" value="Add paper" caption="Snap a mock & diagnose it" href="/papers/new" />
           <Tile color="lime" emoji="⚔️" label="Play" value="Battle" caption="Beat your weak topics" href="/battle" />
           <Tile color="purple" emoji="🧠" label="Ask" value="Coach" caption="Chat with your mistakes" href="/tutor" />
@@ -87,7 +87,7 @@ export default function Home() {
             <p className="text-sm text-[var(--color-ink-soft)]">Tap a tile above to add your first mock.</p>
           </div>
         ) : (
-          <ul className="mt-2 flex flex-col gap-2.5">
+          <ul className="stagger mt-2 flex flex-col gap-2.5">
             {papers.map((p) => (
               <li key={p.id}>
                 <Link href={paperHref(p)} className="card flex items-center gap-3 p-4">
