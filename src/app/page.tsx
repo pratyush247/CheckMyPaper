@@ -45,6 +45,17 @@ export default function Home() {
       <TopBar
         left={<ProfileButton />}
         title={`Hey ${firstName} 👋`}
+        right={
+          <Link
+            href="/friends"
+            aria-label="Friends"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-line)] bg-[var(--color-card)]"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M16 11a3 3 0 1 0-2.83-4M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0 0c-2.7 0-5 1.6-5 4v1h10M15 20h6v-1c0-2.2-1.9-3.7-4.2-3.95" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </Link>
+        }
       />
 
       <div className="px-4">
