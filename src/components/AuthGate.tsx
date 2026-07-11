@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { getAccount } from "@/lib/store";
 import { useMounted } from "@/lib/useStore";
+import { HandleGate } from "@/components/HandleGate";
 
 // Lightweight local-first gate: no account → /login; on /login with an account → home.
 // SSR and the pre-mount frame render children as-is, so server rendering is preserved.
@@ -24,5 +25,10 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
   if (!mounted) return <>{children}</>;
   if (needsLogin || needsHome) return null;
-  return <>{children}</>;
+  return (
+    <>
+      <HandleGate />
+      {children}
+    </>
+  );
 }

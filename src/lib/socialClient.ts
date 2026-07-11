@@ -52,3 +52,9 @@ export const submitChallengeScore = (challengeId: string, phone: string, score: 
 
 export const report = (reporter: string, target: string, opts: { messageId?: string; reason?: string }) =>
   post("/api/social/report", { reporter, target, ...opts }) as Promise<{ ok: boolean }>;
+
+export interface TopicRef { topic: string; subject: string }
+export const syncWeakTopics = (phone: string, topics: TopicRef[]) =>
+  post("/api/social/weak-topics", { phone, topics }) as Promise<{ ok: boolean }>;
+export const getChallengeTopics = (me: string, peer: string) =>
+  get(`/api/social/weak-topics?me=${me}&peer=${peer}`) as Promise<{ configured: boolean; common: TopicRef[]; subjects: string[] }>;

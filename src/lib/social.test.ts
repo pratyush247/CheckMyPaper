@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { canonicalPair, normalizeHandle, isValidHandle, genInviteCode, rankChallenge, blockState } from "./social";
+import { canonicalPair, normalizeHandle, isValidHandle, genInviteCode, rankChallenge, blockState, commonWeakTopics, commonSubjects } from "./social";
 
 describe("canonicalPair", () => {
   it("orders the same regardless of argument order", () => {
@@ -52,5 +52,20 @@ describe("blockState", () => {
     expect(blockState({ status: "accepted", blocked_by: null }, "a")).toBe("none");
     expect(blockState({ status: "blocked", blocked_by: "a" }, "a")).toBe("blocked_by_me");
     expect(blockState({ status: "blocked", blocked_by: "b" }, "a")).toBe("blocked_me");
+  });
+});
+
+describe("commonWeakTopics", () => {
+  const a = [{ topic: "Rotational Motion", subject: "Physics" }, { topic: "Electrostatics", subject: "Physics" }];
+  it("intersects by topic name, case-insensitive, in a's order", () => {
+    const b = [{ topic: "electrostatics", subject: "Physics" }, { topic: "Kinematics", subject: "Physics" }];
+    expect(commonWeakTopics(a, b)).toEqual([{ topic: "Electrostatics", subject: "Physics" }]);
+  });
+  it("empty when nothing overlaps", () => {
+    expect(commonWeakTopics(a, [{ topic: "Thermodynamics", subject: "Physics" }])).toEqual([]);
+  });
+  it("commonSubjects finds shared subjects, drops Unknown", () => {
+    const b = [{ topic: "Mole Concept", subject: "Chemistry" }, { topic: "X", subject: "Unknown" }];
+    expect(commonSubjects([{ topic: "T", subject: "Chemistry" }, { topic: "U", subject: "Unknown" }], b)).toEqual(["Chemistry"]);
   });
 });

@@ -5,8 +5,11 @@ create table if not exists handles (
   phone text primary key references students(phone) on delete cascade,
   handle text unique not null,
   invite_code text unique not null,
+  weak_topics jsonb not null default '[]'::jsonb, -- [{topic, subject}] synced from the device, for common-topic challenges
   created_at timestamptz not null default now()
 );
+-- If handles already existed from an earlier run, make sure the column is there.
+alter table handles add column if not exists weak_topics jsonb not null default '[]'::jsonb;
 create index if not exists handles_handle_idx on handles (lower(handle));
 
 create table if not exists friendships (

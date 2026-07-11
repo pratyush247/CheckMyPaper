@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { TopBar, AppLoading } from "@/components/ui";
-import { getAccount, getWeakTopics } from "@/lib/store";
+import { getAccount } from "@/lib/store";
 import { useStoreVersion, useMounted } from "@/lib/useStore";
-import { getFriends, getMessages, sendMessage, createChallenge, respond, report, type ChatMessage, type FriendInfo } from "@/lib/socialClient";
+import { getFriends, getMessages, sendMessage, createChallenge, respond, report, getChallengeTopics, type ChatMessage, type FriendInfo, type TopicRef } from "@/lib/socialClient";
 
 export default function ThreadPage() {
   const v = useStoreVersion();
@@ -25,7 +25,6 @@ export default function ThreadPage() {
   const threadRef = useRef<string | null>(null);
   const swipe = useRef<{ x: number; y: number } | null>(null);
 
-  const weakTopics = useMemo(() => getWeakTopics().slice(0, 6), []);
   const peer = friend?.phone ?? null;
 
   // resolve the friend (phone + friendship id) from the handle
@@ -112,7 +111,7 @@ export default function ThreadPage() {
         {messages.map((m) => <ChatBubble key={m.id} m={m} mine={m.sender === phone} />)}
       </div>
 
-      {showChallenge && <TopicPicker topics={weakTopics} onPick={challenge} onClose={() => setShowChallenge(false)} />}
+      {showChallenge && peer && <TopicPicker me={phone} peer={peer} onPick={challenge} onClose={() => setShowChallenge(false)} />}
 
       <div className="border-t border-[var(--color-line)] bg-[var(--color-paper)]/95 px-3 py-3 backdrop-blur" style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}>
         <div className="flex items-center gap-2">
@@ -159,27 +158,81 @@ function ChatBubble({ m, mine }: { m: ChatMessage; mine: boolean }) {
   );
 }
 
+// Sources the challenge topic from what BOTH players are weak at. If there's no
+// shared weak topic, they vote a shared subject and type the exact topic — the
+// model curates a JEE paper on it.
 function TopicPicker({
-  topics,
+  me,
+  peer,
   onPick,
   onClose,
 }: {
-  topics: { topic: string; subject: string }[];
+  me: string;
+  peer: string;
   onPick: (topic: string, subject: string) => void;
   onClose: () => void;
 }) {
-  const list = topics.length ? topics : [{ topic: "General Practice", subject: "Unknown" }];
+  const [loading, setLoading] = useState(true);
+  const [common, setCommon] = useState<TopicRef[]>([]);
+  const [subjects, setSubjects] = useState<string[]>(["Physics", "Chemistry", "Maths"]);
+  const [subject, setSubject] = useState("Physics");
+  const [custom, setCustom] = useState("");
+
+  useEffect(() => {
+    let alive = true;
+    getChallengeTopics(me, peer)
+      .then((r) => {
+        if (!alive) return;
+        setCommon(r.common ?? []);
+        const subs = r.subjects && r.subjects.length ? r.subjects : ["Physics", "Chemistry", "Maths"];
+        setSubjects(subs);
+        setSubject(subs[0]);
+      })
+      .finally(() => alive && setLoading(false));
+    return () => { alive = false; };
+  }, [me, peer]);
+
   return (
     <div className="border-t border-[var(--color-line)] bg-[var(--color-card)] p-3">
       <div className="mb-2 flex items-center justify-between">
-        <span className="text-sm font-bold">Challenge topic (your weak areas)</span>
+        <span className="text-sm font-bold">⚔️ Challenge topic</span>
         <button onClick={onClose} className="text-xs">✕</button>
       </div>
-      <div className="flex flex-wrap gap-2">
-        {list.map((t) => (
-          <button key={t.topic} onClick={() => onPick(t.topic, t.subject)} className="chip">{t.topic}</button>
-        ))}
-      </div>
+
+      {loading ? (
+        <p className="py-2 text-xs text-[var(--color-ink-soft)]">Finding what you&apos;re both weak at…</p>
+      ) : common.length > 0 ? (
+        <>
+          <p className="mb-1.5 text-xs text-[var(--color-ink-soft)]">Topics you&apos;re both weak at — pick one:</p>
+          <div className="flex flex-wrap gap-2">
+            {common.map((t) => (
+              <button key={t.topic} onClick={() => onPick(t.topic, t.subject)} className="chip">{t.topic}</button>
+            ))}
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="mb-1.5 text-xs text-[var(--color-ink-soft)]">No shared weak topic yet — vote a subject, then name the topic:</p>
+          <div className="flex flex-wrap gap-2">
+            {subjects.map((s) => (
+              <button key={s} onClick={() => setSubject(s)} className="chip" data-on={subject === s}>{s}</button>
+            ))}
+          </div>
+        </>
+      )}
+
+      {!loading && (
+        <div className="mt-2 flex gap-2">
+          <input
+            value={custom}
+            onChange={(e) => setCustom(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && custom.trim() && onPick(custom.trim(), subject)}
+            placeholder={`Type a ${subject} topic, e.g. Rotational Motion`}
+            className="min-w-0 flex-1 rounded-full border border-[var(--color-line)] bg-[var(--color-paper-2)] px-3 py-2 text-sm outline-none focus:border-[var(--color-violet)]"
+          />
+          <button onClick={() => custom.trim() && onPick(custom.trim(), subject)} disabled={!custom.trim()} className="btn btn-primary shrink-0 !px-4 !py-2 text-sm disabled:opacity-50">Go</button>
+        </div>
+      )}
     </div>
   );
 }

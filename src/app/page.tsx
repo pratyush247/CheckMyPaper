@@ -5,6 +5,7 @@ import { useMemo } from "react";
 import { BottomNav } from "@/components/BottomNav";
 import { ProfileButton } from "@/components/ProfileButton";
 import { Tile } from "@/components/Tile";
+import { DevSeed } from "@/components/DevSeed";
 import { TopBar, TrafficDot, AppLoading } from "@/components/ui";
 import { computeProfile, getAccount, getPapers } from "@/lib/store";
 import { useStoreVersion, useMounted } from "@/lib/useStore";
@@ -70,6 +71,8 @@ export default function Home() {
           <Tile color="purple" emoji="🧠" label="Ask" value="Coach" caption="Chat with your mistakes" href="/tutor" />
           <Tile color="sky" emoji="📊" label="Stats" value="Progress" caption="See your patterns grow" href="/progress" />
         </div>
+
+        <DevSeed />
 
         {/* Pattern highlight */}
         {profile.totalDiagnosed > 0 && topTag && (

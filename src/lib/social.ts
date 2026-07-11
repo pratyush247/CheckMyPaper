@@ -20,6 +20,33 @@ export function genInviteCode(): string {
   return Array.from({ length: 6 }, () => CODE_ALPHABET[Math.floor(Math.random() * CODE_ALPHABET.length)]).join("");
 }
 
+export interface TopicRef { topic: string; subject: string }
+
+// Topics both players are weak at (matched case-insensitively by name), in the
+// first player's order. Drives the "challenge on a shared weak topic" flow.
+export function commonWeakTopics(a: TopicRef[], b: TopicRef[]): TopicRef[] {
+  const bKeys = new Set(b.map((t) => t.topic.trim().toLowerCase()));
+  const seen = new Set<string>();
+  const out: TopicRef[] = [];
+  for (const t of a) {
+    const k = t.topic.trim().toLowerCase();
+    if (k && bKeys.has(k) && !seen.has(k)) { seen.add(k); out.push(t); }
+  }
+  return out;
+}
+
+// Subjects shared across both players' weak areas — the fallback vote options
+// when there is no exact common topic.
+export function commonSubjects(a: TopicRef[], b: TopicRef[]): string[] {
+  const bSubs = new Set(b.map((t) => t.subject));
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const t of a) {
+    if (bSubs.has(t.subject) && t.subject !== "Unknown" && !seen.has(t.subject)) { seen.add(t.subject); out.push(t.subject); }
+  }
+  return out;
+}
+
 export interface ChallengeScore {
   phone: string;
   score: number;

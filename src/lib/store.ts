@@ -61,6 +61,29 @@ export function clearAccount() {
   write(KEYS.account, null);
 }
 
+// Dev-only: drop a seeded paper with wrong answers across a few topics so
+// getWeakTopics() / battle / challenges have data without grinding a real paper.
+export function seedDemoData() {
+  const paperId = uid();
+  const topics: [string, Subject][] = [
+    ["Rotational Motion", "Physics"],
+    ["Electrostatics", "Physics"],
+    ["Thermodynamics", "Chemistry"],
+    ["Probability", "Maths"],
+  ];
+  const questions: Question[] = [];
+  const attempts: Attempt[] = [];
+  topics.forEach(([topic, subject], i) => {
+    const qid = uid();
+    questions.push({ id: qid, paperId, number: i + 1, text: `Sample ${topic} question`, subject, topic, state: "wrong" });
+    attempts.push({ id: uid(), questionId: qid, paperId, state: i % 2 ? "guessed" : "wrong", selfTag: "concept", createdAt: Date.now() });
+  });
+  const paper: Paper = { id: paperId, name: "Demo Mock (seeded)", createdAt: Date.now(), status: "done", questionCount: questions.length };
+  write(KEYS.papers, [...read<Paper[]>(KEYS.papers, []), paper]);
+  write(KEYS.questions, [...read<Question[]>(KEYS.questions, []), ...questions]);
+  write(KEYS.attempts, [...read<Attempt[]>(KEYS.attempts, []), ...attempts]);
+}
+
 // ---- Papers ----------------------------------------------------------------
 
 export function getPapers(): Paper[] {
