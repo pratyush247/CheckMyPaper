@@ -28,6 +28,9 @@
   --color-bad: #d3483f;
   --color-bad-soft: #fbe7e5;
 
+  /* Loaded via a browser <link> in layout.tsx (not next/font), so the dev
+     server never blocks on a font fetch. Falls back to the system stack. */
+  --font-jakarta: "Plus Jakarta Sans";
   --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-display: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
 
