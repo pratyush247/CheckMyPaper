@@ -33,15 +33,16 @@ Each has an "add when" so it's a real backlog, not a graveyard.
 - **Add when:** we want zero external requests / guaranteed offline parity —
   download the woff2s into `public/fonts` and switch to `next/font/local`.
 
-## 4. "Common class" in the curated paper
-- **Discussed:** the model should use the players' common **class** and
-  competitive exam to curate the paper.
-- **Built instead:** exam is fixed to **JEE Main** (already baked into
-  `generateQuiz`); class is not used.
-- **Why deferred:** the account only stores name + phone — class is captured
-  nowhere. Adding it means new onboarding/profile fields.
-- **Add when:** we add class/exam to the student profile (also needed for the
-  NEET/CAT expansion in the PRD).
+## 4. Class in the curated paper — ✅ BUILT
+- Onboarding + profile now capture **class** (11/12/Dropper) and the student's
+  self-reported **toughest subject**; stored on-device and mirrored to
+  `students` (0007). `generateQuiz` takes `className` and pitches the paper to
+  that level; challenges use the creator's class, battle uses the local class.
+- **Simplified:** a challenge uses the **creator's** class, not a per-pair
+  "common class" — friends who challenge are near-always the same class.
+- **Still open:** exam is hard-coded to JEE (no NEET/CAT yet); `weakSubject` is
+  stored but not yet acted on — it's the seed for the future teaching agent's
+  per-student memory. Add when that agent is built.
 
 ## 5. Weak-topic re-sync cadence
 - **Built:** the device pushes its weak topics to the server once, when
