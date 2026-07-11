@@ -51,7 +51,10 @@ export async function POST(req: NextRequest) {
       const { error } = await supabase().from("handles").insert({ phone, handle, invite_code });
       if (!error) return NextResponse.json({ ok: true, handle, inviteCode: invite_code });
       if (error.code === "23505" && String(error.message).includes("handle")) return NextResponse.json({ ok: false, error: "That handle is taken" }, { status: 409 });
-      // else invite_code collision → retry with a new code
+      if (error.code === "23505") continue; // invite_code collision → retry with a new code
+      // Any other error (missing table, schema mismatch, …): surface it, don't spin.
+      console.error("handle insert error", error);
+      return NextResponse.json({ ok: false, error: error.message || "Could not claim, try again" }, { status: 500 });
     }
     return NextResponse.json({ ok: false, error: "Could not claim, try again" }, { status: 500 });
   } catch (err) {
