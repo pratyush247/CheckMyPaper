@@ -26,16 +26,22 @@ export default function FriendsPage() {
 
   const refresh = useCallback(async () => {
     if (!phone) return;
-    const me = await getMe(phone);
-    setConfigured(me.configured);
-    setHandle(me.handle);
-    setInvite(me.inviteCode);
-    if (me.configured) {
-      const f = await getFriends(phone);
-      setFriends(f.friends);
-      setIncoming(f.incoming);
+    try {
+      const me = await getMe(phone);
+      setConfigured(me.configured);
+      setHandle(me.handle);
+      setInvite(me.inviteCode);
+      if (me.configured) {
+        const f = await getFriends(phone);
+        setFriends(f.friends);
+        setIncoming(f.incoming);
+      }
+    } catch {
+      // Network still down after a retry — show a soft message, don't crash.
+      setMsg("Couldn't reach the server. Check your connection and tap Add to retry.");
+    } finally {
+      setReady(true);
     }
-    setReady(true);
   }, [phone]);
 
   useEffect(() => {
