@@ -214,8 +214,9 @@ export default function NarratePage() {
         </div>
 
         {isSkipped ? (
-          <div className="mt-5">
-            <p className="mb-2 text-sm font-bold">Why did you skip this one?</p>
+          <div className="mt-6">
+            <h2 className="text-sm font-bold">Why did you skip this one?</h2>
+            <p className="mb-3 mt-0.5 text-xs text-[var(--color-ink-soft)]">Pick the closest reason.</p>
             <div className="grid grid-cols-1 gap-2">
               {SKIP_REASONS.map((r) => (
                 <button
@@ -231,13 +232,15 @@ export default function NarratePage() {
           </div>
         ) : (
           <>
-            <div className="mt-5">
-              <p className="mb-2 text-sm font-bold">How did you approach it? What did you pick?</p>
+            <div className="mt-6">
+              <h2 className="text-sm font-bold">How did you approach it?</h2>
+              <p className="mb-3 mt-0.5 text-xs text-[var(--color-ink-soft)]">Say what you did and which option you picked.</p>
               <VoiceRecorder value={transcript} onChange={setTranscript} />
             </div>
 
-            <div className="mt-5">
-              <p className="mb-2 text-sm font-bold">What tripped you up?</p>
+            <div className="mt-6">
+              <h2 className="text-sm font-bold">What tripped you up?</h2>
+              <p className="mb-3 mt-0.5 text-xs text-[var(--color-ink-soft)]">Pick the one that fits best.</p>
               <div className="grid grid-cols-1 gap-2">
                 {ERROR_TAGS.map((t) => (
                   <button
