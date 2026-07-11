@@ -10,6 +10,7 @@ export async function POST(req: NextRequest) {
       String(body.topic || "Unknown"),
       String(body.subject || "Unknown"),
       Math.max(1, Math.min(10, Number(body.n) || 10)),
+      { className: body.className ? String(body.className) : undefined },
     );
     return NextResponse.json({ questions });
   } catch (err) {

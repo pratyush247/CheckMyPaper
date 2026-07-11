@@ -3,22 +3,32 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveAccount } from "@/lib/store";
+import { saveProfile } from "@/lib/socialClient";
+import type { Subject } from "@/lib/types";
+
+const CLASSES = ["Class 11", "Class 12", "Dropper"];
+const SUBJECTS: Subject[] = ["Physics", "Chemistry", "Maths"];
 
 export default function LoginPage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [klass, setKlass] = useState("");
+  const [weakSubject, setWeakSubject] = useState<Subject | "">("");
   const [touched, setTouched] = useState(false);
 
   const phoneDigits = phone.replace(/\D/g, "");
   const nameOk = name.trim().length >= 2;
   const phoneOk = phoneDigits.length === 10;
-  const valid = nameOk && phoneOk;
+  const classOk = klass.length > 0;
+  const subjectOk = weakSubject.length > 0;
+  const valid = nameOk && phoneOk && classOk && subjectOk;
 
   function submit() {
     setTouched(true);
     if (!valid) return;
-    saveAccount(name, phoneDigits);
+    saveAccount(name, phoneDigits, { klass, weakSubject: weakSubject as Subject });
+    saveProfile(phoneDigits, name.trim(), klass, weakSubject).catch(() => {});
     router.replace("/");
   }
 
@@ -68,6 +78,30 @@ export default function LoginPage() {
           </div>
           {touched && !phoneOk && (
             <p className="mt-1 text-xs font-medium text-[var(--color-bad)]">Enter a 10-digit mobile number.</p>
+          )}
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-sm font-bold">Which class?</label>
+          <div className="flex flex-wrap gap-2">
+            {CLASSES.map((c) => (
+              <button key={c} onClick={() => setKlass(c)} className="chip" data-on={klass === c}>{c}</button>
+            ))}
+          </div>
+          {touched && !classOk && (
+            <p className="mt-1 text-xs font-medium text-[var(--color-bad)]">Pick your class.</p>
+          )}
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-sm font-bold">Which subject is toughest for you?</label>
+          <div className="flex flex-wrap gap-2">
+            {SUBJECTS.map((s) => (
+              <button key={s} onClick={() => setWeakSubject(s)} className="chip" data-on={weakSubject === s}>{s}</button>
+            ))}
+          </div>
+          {touched && !subjectOk && (
+            <p className="mt-1 text-xs font-medium text-[var(--color-bad)]">Pick the one you find hardest.</p>
           )}
         </div>
       </div>

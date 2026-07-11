@@ -17,6 +17,17 @@ export function supabase(): SupabaseClient {
 }
 
 // Ensure a student row exists / name is current. Safe to call on every action.
-export async function upsertStudent(phone: string, name: string) {
-  await supabase().from("students").upsert({ phone, name }, { onConflict: "phone" });
+// Only overwrites class/weak_subject when explicitly provided, so a plain
+// (phone, name) call from another route never wipes the profile.
+export async function upsertStudent(phone: string, name: string, extra?: { klass?: string; weakSubject?: string }) {
+  const row: Record<string, string> = { phone, name };
+  if (extra?.klass) row.class = extra.klass;
+  if (extra?.weakSubject) row.weak_subject = extra.weakSubject;
+  await supabase().from("students").upsert(row, { onConflict: "phone" });
+}
+
+// The student's self-reported class, for pitching a curated paper at their level.
+export async function studentClass(phone: string): Promise<string | null> {
+  const { data } = await supabase().from("students").select("class").eq("phone", phone).maybeSingle();
+  return (data?.class as string | null) ?? null;
 }

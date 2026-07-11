@@ -53,6 +53,9 @@ export const submitChallengeScore = (challengeId: string, phone: string, score: 
 export const report = (reporter: string, target: string, opts: { messageId?: string; reason?: string }) =>
   post("/api/social/report", { reporter, target, ...opts }) as Promise<{ ok: boolean }>;
 
+export const saveProfile = (phone: string, name: string, klass?: string, weakSubject?: string) =>
+  post("/api/social/profile", { phone, name, klass, weakSubject }) as Promise<{ ok: boolean }>;
+
 export interface TopicRef { topic: string; subject: string }
 export const syncWeakTopics = (phone: string, topics: TopicRef[]) =>
   post("/api/social/weak-topics", { phone, topics }) as Promise<{ ok: boolean }>;

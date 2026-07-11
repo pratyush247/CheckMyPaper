@@ -351,11 +351,12 @@ export interface QuizQuestion {
   explanation: string;
 }
 
-export async function generateQuiz(topic: string, subject: string, n = 10): Promise<QuizQuestion[]> {
+export async function generateQuiz(topic: string, subject: string, n = 10, opts?: { className?: string }): Promise<QuizQuestion[]> {
   if (!aiEnabled()) return mockQuiz(topic, n);
 
-  const prompt = `Generate ${n} multiple-choice questions to test mastery of the JEE topic "${topic}" (${subject}).
-- Match typical JEE Main difficulty for this topic.
+  const level = opts?.className ? `a ${opts.className} JEE aspirant` : "a JEE aspirant";
+  const prompt = `Generate ${n} multiple-choice questions to test mastery of the JEE topic "${topic}" (${subject}) for ${level}.
+- Match typical JEE Main difficulty for this topic and pitch it to the student's class level.
 - Exactly 4 options each, exactly one correct.
 - Include a one-line explanation of the correct answer.
 Return ONLY a JSON array of objects: {"q": "...", "options": ["a","b","c","d"], "answer": <0-3>, "explanation": "..."}`;

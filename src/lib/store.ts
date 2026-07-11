@@ -51,8 +51,15 @@ export function getAccount(): Account | null {
   return read<Account | null>(KEYS.account, null);
 }
 
-export function saveAccount(name: string, phone: string): Account {
-  const account: Account = { name: name.trim(), phone: phone.replace(/\D/g, ""), createdAt: Date.now() };
+export function saveAccount(name: string, phone: string, extra?: { klass?: string; weakSubject?: Subject }): Account {
+  const prev = getAccount();
+  const account: Account = {
+    name: name.trim(),
+    phone: phone.replace(/\D/g, ""),
+    klass: extra?.klass ?? prev?.klass,
+    weakSubject: extra?.weakSubject ?? prev?.weakSubject,
+    createdAt: prev?.createdAt ?? Date.now(),
+  };
   write(KEYS.account, account);
   return account;
 }

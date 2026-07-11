@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabaseServer";
+import { supabase, studentClass } from "@/lib/supabaseServer";
 import { generateQuiz } from "@/lib/ai";
 
 // Server-only. Generates a frozen 10-question set and inserts a challenge,
@@ -13,7 +13,8 @@ export async function createChallengeRecord(opts: {
   groupCode?: string | null;
   postCard?: boolean; // post a "challenge" DM card (skip when a vote card already shows the result)
 }): Promise<{ challengeId: string; questions: unknown[] }> {
-  const questions = await generateQuiz(opts.topic, opts.subject, 10);
+  const className = await studentClass(opts.creatorPhone).catch(() => null);
+  const questions = await generateQuiz(opts.topic, opts.subject, 10, { className: className ?? undefined });
   const ins = await supabase()
     .from("challenges")
     .insert({
