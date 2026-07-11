@@ -1,0 +1,41 @@
+import { supabase } from "@/lib/supabaseServer";
+import { generateQuiz } from "@/lib/ai";
+
+// Server-only. Generates a frozen 10-question set and inserts a challenge,
+// optionally posting a challenge card into a DM thread. Shared by the direct
+// challenge route and the vote-resolution path so the logic lives in one place.
+export async function createChallengeRecord(opts: {
+  creatorPhone: string;
+  topic: string;
+  subject: string;
+  participants: string[];
+  threadId?: string | null;
+  groupCode?: string | null;
+  postCard?: boolean; // post a "challenge" DM card (skip when a vote card already shows the result)
+}): Promise<{ challengeId: string; questions: unknown[] }> {
+  const questions = await generateQuiz(opts.topic, opts.subject, 10);
+  const ins = await supabase()
+    .from("challenges")
+    .insert({
+      topic: opts.topic,
+      creator_phone: opts.creatorPhone,
+      question_set: questions,
+      participant_phones: opts.participants,
+      status: "open",
+      thread_id: opts.threadId ?? null,
+      group_code: opts.groupCode ?? null,
+      expires_at: new Date(Date.now() + 7 * 864e5).toISOString(),
+    })
+    .select("id")
+    .single();
+  const challengeId = ins.data?.id as string;
+
+  if (opts.threadId && opts.postCard !== false) {
+    await supabase().from("dm_messages").insert({
+      thread_id: opts.threadId, sender_phone: opts.creatorPhone, kind: "challenge",
+      body: `Challenge: ${opts.topic}`, meta: { challengeId, topic: opts.topic },
+    });
+    await supabase().from("dm_threads").update({ last_message_at: new Date().toISOString() }).eq("id", opts.threadId);
+  }
+  return { challengeId, questions };
+}

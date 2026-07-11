@@ -4,7 +4,7 @@ export type { RankedScore };
 
 export interface FriendInfo { id: string; phone: string; handle: string; name: string }
 export interface PendingReq { id: string; phone: string; handle: string; name: string }
-export interface ChatMessage { id: string; sender: string; body: string; kind: "text" | "challenge" | "result" | "gif"; meta: unknown; createdAt: string }
+export interface ChatMessage { id: string; sender: string; body: string; kind: "text" | "challenge" | "result" | "gif" | "vote"; meta: unknown; createdAt: string }
 export interface ChallengeView { topic: string; questions: unknown[]; participants: string[]; status: string; scores: RankedScore[] }
 
 const j = (r: Response) => r.json();
@@ -58,3 +58,15 @@ export const syncWeakTopics = (phone: string, topics: TopicRef[]) =>
   post("/api/social/weak-topics", { phone, topics }) as Promise<{ ok: boolean }>;
 export const getChallengeTopics = (me: string, peer: string) =>
   get(`/api/social/weak-topics?me=${me}&peer=${peer}`) as Promise<{ configured: boolean; common: TopicRef[]; subjects: string[] }>;
+
+export interface VoteOption { id: string; topic: string; subject: string }
+export interface VoteView {
+  configured: boolean; id: string; options: VoteOption[]; votes: Record<string, string>;
+  participants: string[]; status: string; chosenTopic: string | null; challengeId: string | null; error?: string;
+}
+export const createVote = (phone: string, name: string, threadId: string, participants: string[], options: VoteOption[]) =>
+  post("/api/social/vote", { phone, name, threadId, participants, options }) as Promise<{ ok: boolean; voteId?: string; error?: string }>;
+export const getVote = (id: string) =>
+  get(`/api/social/vote?id=${id}`) as Promise<VoteView>;
+export const castVote = (voteId: string, phone: string, optionId: string) =>
+  post("/api/social/vote/cast", { voteId, phone, optionId }) as Promise<{ ok: boolean; closed: boolean; challengeId?: string; votes?: Record<string, string> }>;

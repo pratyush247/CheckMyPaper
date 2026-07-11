@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase, supabaseConfigured, upsertStudent } from "@/lib/supabaseServer";
 import { rankChallenge } from "@/lib/social";
-import { generateQuiz } from "@/lib/ai";
+import { createChallengeRecord } from "@/lib/challengeServer";
 
 export const maxDuration = 120;
 
@@ -24,21 +24,10 @@ export async function POST(req: NextRequest) {
     }
     participants = Array.from(new Set([me, ...participants].filter((p) => p.length === 10))).slice(0, 8);
 
-    const questions = await generateQuiz(topic, subject, 10);
-    const ins = await supabase().from("challenges").insert({
-      topic, creator_phone: me, question_set: questions, participant_phones: participants,
-      status: "open", thread_id: b.threadId ?? null, group_code: b.groupCode ?? null,
-      expires_at: new Date(Date.now() + 7 * 864e5).toISOString(),
-    }).select("id").single();
-    const challengeId = ins.data?.id as string;
-
-    if (b.threadId) {
-      await supabase().from("dm_messages").insert({
-        thread_id: b.threadId, sender_phone: me, kind: "challenge", body: `Challenge: ${topic}`,
-        meta: { challengeId, topic },
-      });
-      await supabase().from("dm_threads").update({ last_message_at: new Date().toISOString() }).eq("id", b.threadId);
-    }
+    const { challengeId, questions } = await createChallengeRecord({
+      creatorPhone: me, topic, subject, participants,
+      threadId: b.threadId ?? null, groupCode: b.groupCode ?? null,
+    });
     return NextResponse.json({ ok: true, challengeId, questions });
   } catch (err) {
     console.error("challenge create error", err);

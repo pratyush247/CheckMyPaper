@@ -3,17 +3,15 @@
 Things we discussed this session but deliberately did **not** build, and why.
 Each has an "add when" so it's a real backlog, not a graveyard.
 
-## 1. Live two-way challenge voting
-- **Discussed:** when two friends have no common weak topic, *both* players
-  vote on a subject/topic and the app tallies the vote live.
-- **Built instead:** the challenge **creator proposes** — picks a shared
-  subject and types the exact topic; the model curates a JEE paper on it.
-- **Why deferred:** a synchronous cross-device vote needs real-time state
-  (polling both sides, tallying, a "waiting for your friend to vote" UI). It's
-  a whole feature for the same end result (a paper on a mutually-relevant
-  topic). Creator-proposes demos identically.
-- **Add when:** the pilot shows friends argue over the topic, or want fairness
-  in who picks.
+## 1. Live two-way challenge voting — ✅ BUILT
+- Both friends now see a **ballot card in the chat** (`challenge_votes` table,
+  `/api/social/vote` + `/vote/cast`, `VoteCard`). Each casts one vote; when all
+  have voted the winner resolves (majority; ties → first-listed option) and the
+  challenge auto-creates via `createChallengeRecord`. Poll-based (2s), with an
+  atomic status claim so the challenge is created once.
+- **Still simplified:** tie-break is deterministic (first-listed), not a coin
+  flip or run-off; vote is single-choice; resolution is poll-based, not push.
+  Add real-time (Supabase Realtime) + run-off **when** the pilot needs it.
 
 ## 2. Username entry truly *inside* the top navbar
 - **Discussed:** if the first-run username popup is skipped, the entry should

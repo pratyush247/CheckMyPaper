@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { TopBar, AppLoading } from "@/components/ui";
 import { getAccount } from "@/lib/store";
 import { useStoreVersion, useMounted } from "@/lib/useStore";
-import { getFriends, getMessages, sendMessage, createChallenge, respond, report, getChallengeTopics, type ChatMessage, type FriendInfo, type TopicRef } from "@/lib/socialClient";
+import { getFriends, getMessages, sendMessage, respond, report, getChallengeTopics, createVote, getVote, castVote, type ChatMessage, type FriendInfo, type VoteOption, type VoteView } from "@/lib/socialClient";
 
 export default function ThreadPage() {
   const v = useStoreVersion();
@@ -60,10 +60,13 @@ export default function ThreadPage() {
       sinceRef.current = r.message.createdAt;
     }
   }
-  async function challenge(topic: string, subject: string) {
-    if (!peer) return;
+  async function startVote(options: VoteOption[]) {
+    if (!peer || options.length === 0) return;
     setShowChallenge(false);
-    await createChallenge(phone, name, topic, { subject, participants: [peer], threadId: threadRef.current ?? undefined });
+    let threadId = threadRef.current;
+    if (!threadId) { await poll(); threadId = threadRef.current; }
+    if (!threadId) return;
+    await createVote(phone, name, threadId, [peer], options);
     poll();
   }
   async function block() {
@@ -108,10 +111,10 @@ export default function ThreadPage() {
         {messages.length === 0 && (
           <p className="mt-8 text-center text-xs text-[var(--color-ink-soft)]">Say hi 👋 or ⚔️ challenge @{handle} to a battle.</p>
         )}
-        {messages.map((m) => <ChatBubble key={m.id} m={m} mine={m.sender === phone} />)}
+        {messages.map((m) => <ChatBubble key={m.id} m={m} mine={m.sender === phone} me={phone} />)}
       </div>
 
-      {showChallenge && peer && <TopicPicker me={phone} peer={peer} onPick={challenge} onClose={() => setShowChallenge(false)} />}
+      {showChallenge && peer && <TopicPicker me={phone} peer={peer} onStart={startVote} onClose={() => setShowChallenge(false)} />}
 
       <div className="border-t border-[var(--color-line)] bg-[var(--color-paper)]/95 px-3 py-3 backdrop-blur" style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}>
         <div className="flex items-center gap-2">
@@ -130,7 +133,11 @@ export default function ThreadPage() {
   );
 }
 
-function ChatBubble({ m, mine }: { m: ChatMessage; mine: boolean }) {
+function ChatBubble({ m, mine, me }: { m: ChatMessage; mine: boolean; me: string }) {
+  if (m.kind === "vote") {
+    const meta = m.meta as { voteId?: string } | null;
+    return meta?.voteId ? <VoteCard voteId={meta.voteId} me={me} /> : null;
+  }
   if (m.kind === "challenge") {
     const meta = m.meta as { topic?: string; challengeId?: string } | null;
     return (
@@ -158,80 +165,158 @@ function ChatBubble({ m, mine }: { m: ChatMessage; mine: boolean }) {
   );
 }
 
-// Sources the challenge topic from what BOTH players are weak at. If there's no
-// shared weak topic, they vote a shared subject and type the exact topic — the
-// model curates a JEE paper on it.
+// Builds the ballot for a topic vote. Seeds it with topics BOTH players are
+// weak at; either friend can add more options (shared subject + custom topic).
+// "Start vote" opens a live ballot both must vote on before the challenge.
 function TopicPicker({
   me,
   peer,
-  onPick,
+  onStart,
   onClose,
 }: {
   me: string;
   peer: string;
-  onPick: (topic: string, subject: string) => void;
+  onStart: (options: VoteOption[]) => void;
   onClose: () => void;
 }) {
   const [loading, setLoading] = useState(true);
-  const [common, setCommon] = useState<TopicRef[]>([]);
   const [subjects, setSubjects] = useState<string[]>(["Physics", "Chemistry", "Maths"]);
   const [subject, setSubject] = useState("Physics");
   const [custom, setCustom] = useState("");
+  const [ballot, setBallot] = useState<VoteOption[]>([]);
 
   useEffect(() => {
     let alive = true;
     getChallengeTopics(me, peer)
       .then((r) => {
         if (!alive) return;
-        setCommon(r.common ?? []);
         const subs = r.subjects && r.subjects.length ? r.subjects : ["Physics", "Chemistry", "Maths"];
         setSubjects(subs);
         setSubject(subs[0]);
+        setBallot((r.common ?? []).slice(0, 4).map((t, i) => ({ id: `c${i}`, topic: t.topic, subject: t.subject })));
       })
       .finally(() => alive && setLoading(false));
     return () => { alive = false; };
   }, [me, peer]);
 
+  function addCustom() {
+    const topic = custom.trim();
+    if (!topic) return;
+    setBallot((b) =>
+      b.some((o) => o.topic.toLowerCase() === topic.toLowerCase()) ? b : [...b, { id: `x${Date.now()}`, topic, subject }].slice(0, 6),
+    );
+    setCustom("");
+  }
+
   return (
     <div className="border-t border-[var(--color-line)] bg-[var(--color-card)] p-3">
       <div className="mb-2 flex items-center justify-between">
-        <span className="text-sm font-bold">⚔️ Challenge topic</span>
+        <span className="text-sm font-bold">🗳️ Start a topic vote</span>
         <button onClick={onClose} className="text-xs">✕</button>
       </div>
 
       {loading ? (
         <p className="py-2 text-xs text-[var(--color-ink-soft)]">Finding what you&apos;re both weak at…</p>
-      ) : common.length > 0 ? (
-        <>
-          <p className="mb-1.5 text-xs text-[var(--color-ink-soft)]">Topics you&apos;re both weak at — pick one:</p>
-          <div className="flex flex-wrap gap-2">
-            {common.map((t) => (
-              <button key={t.topic} onClick={() => onPick(t.topic, t.subject)} className="chip">{t.topic}</button>
-            ))}
-          </div>
-        </>
       ) : (
         <>
-          <p className="mb-1.5 text-xs text-[var(--color-ink-soft)]">No shared weak topic yet — vote a subject, then name the topic:</p>
+          <p className="mb-1.5 text-xs text-[var(--color-ink-soft)]">
+            {ballot.length > 0 ? "On the ballot — you'll both vote:" : "No shared weak topic — add a couple of options to vote on:"}
+          </p>
+          {ballot.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {ballot.map((o) => (
+                <button key={o.id} onClick={() => setBallot((b) => b.filter((x) => x.id !== o.id))} className="chip">
+                  {o.topic} <span className="opacity-60">✕</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          <p className="mb-1.5 mt-3 text-xs text-[var(--color-ink-soft)]">Add an option</p>
           <div className="flex flex-wrap gap-2">
             {subjects.map((s) => (
               <button key={s} onClick={() => setSubject(s)} className="chip" data-on={subject === s}>{s}</button>
             ))}
           </div>
+          <div className="mt-2 flex gap-2">
+            <input
+              value={custom}
+              onChange={(e) => setCustom(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && addCustom()}
+              placeholder={`Type a ${subject} topic, e.g. Rotational Motion`}
+              className="min-w-0 flex-1 rounded-full border border-[var(--color-line)] bg-[var(--color-paper-2)] px-3 py-2 text-sm outline-none focus:border-[var(--color-violet)]"
+            />
+            <button onClick={addCustom} disabled={!custom.trim()} className="btn btn-line shrink-0 !px-4 !py-2 text-sm disabled:opacity-50">Add</button>
+          </div>
+
+          <button onClick={() => onStart(ballot)} disabled={ballot.length === 0} className="btn btn-primary mt-3 w-full disabled:opacity-50">Start vote →</button>
         </>
       )}
+    </div>
+  );
+}
 
-      {!loading && (
-        <div className="mt-2 flex gap-2">
-          <input
-            value={custom}
-            onChange={(e) => setCustom(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && custom.trim() && onPick(custom.trim(), subject)}
-            placeholder={`Type a ${subject} topic, e.g. Rotational Motion`}
-            className="min-w-0 flex-1 rounded-full border border-[var(--color-line)] bg-[var(--color-paper-2)] px-3 py-2 text-sm outline-none focus:border-[var(--color-violet)]"
-          />
-          <button onClick={() => custom.trim() && onPick(custom.trim(), subject)} disabled={!custom.trim()} className="btn btn-primary shrink-0 !px-4 !py-2 text-sm disabled:opacity-50">Go</button>
-        </div>
+// Live ballot bubble in the chat. Polls the vote until it resolves, lets you
+// tap a topic to vote, and links to the challenge once both have voted.
+function VoteCard({ voteId, me }: { voteId: string; me: string }) {
+  const [vote, setVote] = useState<VoteView | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    let timer: ReturnType<typeof setInterval>;
+    const tick = async () => {
+      const v = await getVote(voteId).catch(() => null);
+      if (!alive || !v || !Array.isArray(v.options)) return;
+      setVote(v);
+      if (v.status === "closed") clearInterval(timer);
+    };
+    tick();
+    timer = setInterval(tick, 2000);
+    return () => { alive = false; clearInterval(timer); };
+  }, [voteId]);
+
+  async function cast(optionId: string) {
+    if (busy || !vote || vote.status === "closed") return;
+    setBusy(true);
+    await castVote(voteId, me, optionId).catch(() => {});
+    const v = await getVote(voteId).catch(() => null);
+    setBusy(false);
+    if (v && Array.isArray(v.options)) setVote(v);
+  }
+
+  if (!vote) return <div className="my-1.5 rounded-2xl border border-[var(--color-line)] p-3 text-xs text-[var(--color-ink-soft)]">Loading vote…</div>;
+
+  const counts: Record<string, number> = {};
+  Object.values(vote.votes || {}).forEach((o) => (counts[o] = (counts[o] || 0) + 1));
+  const myPick = vote.votes?.[me];
+  const closed = vote.status === "closed";
+
+  return (
+    <div className="my-1.5 rounded-2xl bg-[var(--color-violet-soft)] p-3">
+      <p className="text-sm font-bold text-[var(--color-violet-ink)]">🗳️ Vote the challenge topic</p>
+      <div className="mt-2 flex flex-col gap-1.5">
+        {vote.options.map((o) => {
+          const c = counts[o.id] || 0;
+          const isMine = myPick === o.id;
+          const won = closed && vote.chosenTopic === o.topic;
+          return (
+            <button
+              key={o.id}
+              onClick={() => cast(o.id)}
+              disabled={closed || busy}
+              className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm ${isMine ? "bg-[var(--color-violet)] text-white" : "bg-[var(--color-card)]"} ${won ? "ring-2 ring-[var(--color-violet)]" : ""}`}
+            >
+              <span>{o.topic} {won ? "🏆" : ""}</span>
+              <span className="text-xs opacity-80">{c > 0 ? `${c}` : ""}</span>
+            </button>
+          );
+        })}
+      </div>
+      {closed && vote.challengeId ? (
+        <a href={`/battle/challenge/${vote.challengeId}`} className="mt-2 block text-center text-xs font-bold text-[var(--color-violet-ink)] underline">Challenge ready — Play →</a>
+      ) : (
+        <p className="mt-2 text-center text-xs text-[var(--color-violet-ink)]/80">{myPick ? "Waiting for your friend to vote…" : "Tap a topic to vote"}</p>
       )}
     </div>
   );

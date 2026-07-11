@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { canonicalPair, normalizeHandle, isValidHandle, genInviteCode, rankChallenge, blockState, commonWeakTopics, commonSubjects } from "./social";
+import { canonicalPair, normalizeHandle, isValidHandle, genInviteCode, rankChallenge, blockState, commonWeakTopics, commonSubjects, allVoted, resolveVote } from "./social";
 
 describe("canonicalPair", () => {
   it("orders the same regardless of argument order", () => {
@@ -67,5 +67,26 @@ describe("commonWeakTopics", () => {
   it("commonSubjects finds shared subjects, drops Unknown", () => {
     const b = [{ topic: "Mole Concept", subject: "Chemistry" }, { topic: "X", subject: "Unknown" }];
     expect(commonSubjects([{ topic: "T", subject: "Chemistry" }, { topic: "U", subject: "Unknown" }], b)).toEqual(["Chemistry"]);
+  });
+});
+
+describe("challenge vote", () => {
+  const opts = [
+    { id: "o1", topic: "Rotational Motion", subject: "Physics" },
+    { id: "o2", topic: "Electrostatics", subject: "Physics" },
+  ];
+  it("allVoted is true only when every participant has a vote", () => {
+    expect(allVoted(["a", "b"], { a: "o1" })).toBe(false);
+    expect(allVoted(["a", "b"], { a: "o1", b: "o2" })).toBe(true);
+    expect(allVoted([], {})).toBe(false);
+  });
+  it("resolveVote picks the majority option", () => {
+    expect(resolveVote(opts, { a: "o2", b: "o2" })?.id).toBe("o2");
+  });
+  it("resolveVote breaks a tie to the first-listed option", () => {
+    expect(resolveVote(opts, { a: "o1", b: "o2" })?.id).toBe("o1");
+  });
+  it("resolveVote returns null with no options", () => {
+    expect(resolveVote([], { a: "o1" })).toBeNull();
   });
 });

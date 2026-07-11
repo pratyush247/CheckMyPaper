@@ -39,7 +39,7 @@ create table if not exists dm_messages (
   thread_id uuid not null references dm_threads(id) on delete cascade,
   sender_phone text not null,
   body text not null default '',
-  kind text not null default 'text' check (kind in ('text','challenge','result','gif')),
+  kind text not null default 'text' check (kind in ('text','challenge','result','gif','vote')),
   meta jsonb,
   created_at timestamptz not null default now()
 );
