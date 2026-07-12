@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabase, supabaseConfigured } from "@/lib/supabaseServer";
 import { embed, embeddingsEnabled } from "@/lib/embeddings";
 import { deepseekChat } from "@/lib/ai";
+import { TAG_SHORT } from "@/lib/errorTags";
 import type { ChatMessage } from "@/lib/llm";
+import type { ErrorTag } from "@/lib/types";
 
 export const maxDuration = 60;
 
@@ -40,14 +42,21 @@ export async function POST(req: NextRequest) {
       ? matches
           .map(
             (m) =>
-              `- [${m.topic || "?"}] "${m.question_text}" — they said: "${m.transcript || "(no note)"}" — slipped on: ${m.error_tag || "?"}`,
+              `- [${m.topic || "?"}] "${m.question_text}" — they said: "${m.transcript || "(no note)"}" — slipped on: ${TAG_SHORT[m.error_tag as ErrorTag] ?? m.error_tag ?? "?"}`,
           )
           .join("\n")
       : "(No matching past mistakes found for this question.)";
 
     const system: ChatMessage = {
       role: "system",
-      content: `You are the student's personal JEE tutor inside CheckMyPaper. You can see THEIR real past mistakes below. Answer their question grounded in these — point out the specific topics and recurring patterns you notice in their data. Be warm, encouraging, and use simple language a 15-year-old understands. Keep it concise (a few short paragraphs max). Do not invent mistakes that aren't listed.
+      content: `You are the student's personal JEE coach inside CheckMyPaper. You can see THEIR real past mistakes below. Answer their question grounded in these — point out the specific topics and recurring patterns you notice in their data. Do not invent mistakes that aren't listed.
+
+STRUCTURE every reply exactly like this:
+1. One bold headline sentence naming the single biggest pattern (e.g. "**Your #1 leak: rushing Physics calculations.**").
+2. Then 2-3 short bullet points, each starting with a bold 2-4 word lead-in, giving the evidence from their mistakes.
+3. End with ONE concrete action step they can do today, as its own short paragraph starting with "**Do this:**".
+
+RULES: warm and encouraging; simple words a 15-year-old understands; under 130 words total; never use internal tag names (say "calculation slip" not "calc_slip", "misread the question" not "misread", "concept gap" not "concept"); no headings, no tables, no nested lists.
 
 THE STUDENT'S RELEVANT PAST MISTAKES:
 ${context}`,

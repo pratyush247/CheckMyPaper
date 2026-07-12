@@ -27,9 +27,11 @@ export default function ChallengePlayPage() {
   const startRef = useRef(0);
   const [now, setNow] = useState(0);
 
-  // load the frozen challenge
+  // load the frozen challenge — state is PER VIEWER: if I already have a score,
+  // show results (re-opening a finished challenge never replays it); if I
+  // haven't played, I can play even when everyone else already finished.
   useEffect(() => {
-    if (!mounted) return;
+    if (!mounted || !phone) return;
     (async () => {
       const c = await getChallenge(id);
       if (!c.configured || c.error || !Array.isArray(c.questions) || c.questions.length === 0) {
@@ -38,12 +40,28 @@ export default function ChallengePlayPage() {
       }
       setTopic(c.topic);
       setQuiz(c.questions as QuizQuestion[]);
+      if ((c.scores ?? []).some((s) => s.phone === phone)) {
+        setRanked(c.scores);
+        setPhase("result");
+        return;
+      }
       setAnswers(new Array((c.questions as QuizQuestion[]).length).fill(-1));
       startRef.current = Date.now();
       setNow(Date.now());
       setPhase("quiz");
     })();
-  }, [mounted, id]);
+  }, [mounted, id, phone]);
+
+  // On the result screen, keep standings fresh until everyone has played.
+  useEffect(() => {
+    if (phase !== "result") return;
+    const t = setInterval(async () => {
+      const c = await getChallenge(id).catch(() => null);
+      if (c?.scores) setRanked(c.scores);
+      if (c?.status === "closed") clearInterval(t);
+    }, 4000);
+    return () => clearInterval(t);
+  }, [phase, id]);
 
   // timer
   useEffect(() => {
@@ -88,7 +106,7 @@ export default function ChallengePlayPage() {
     const mine = ranked.find((r) => r.phone === phone);
     return (
       <main className="pb-28">
-        <TopBar title={topic} />
+        <TopBar title={topic} back="/" />
         <div className="px-4 pt-1">
           <div className="card p-6 text-center">
             <div className="text-5xl">{mine?.winner ? "🏆" : "💪"}</div>
@@ -112,7 +130,7 @@ export default function ChallengePlayPage() {
             </>
           )}
 
-          <button onClick={() => router.push("/friends")} className="btn btn-primary mt-5 w-full">Back to friends →</button>
+          <button onClick={() => router.push("/")} className="btn btn-primary mt-5 w-full">Home →</button>
         </div>
       </main>
     );

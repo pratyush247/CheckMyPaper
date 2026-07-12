@@ -7,6 +7,14 @@ import { getAccount } from "@/lib/store";
 import { useStoreVersion, useMounted } from "@/lib/useStore";
 import { getFriends, getMessages, sendMessage, respond, report, getChallengeTopics, createVote, getVote, castVote, type ChatMessage, type FriendInfo, type VoteOption, type VoteView } from "@/lib/socialClient";
 
+// De-dupe by server id: an in-flight poll can race the optimistic send()
+// append and return the same message — merging by id keeps exactly one copy.
+function mergeMsgs(prev: ChatMessage[], add: ChatMessage[]): ChatMessage[] {
+  const seen = new Set(prev.map((m) => m.id));
+  const fresh = add.filter((m) => !seen.has(m.id));
+  return fresh.length ? [...prev, ...fresh] : prev;
+}
+
 export default function ThreadPage() {
   const v = useStoreVersion();
   const mounted = useMounted();
@@ -38,7 +46,7 @@ export default function ThreadPage() {
     const r = await getMessages(phone, peer, sinceRef.current);
     threadRef.current = r.threadId;
     if (r.messages.length) {
-      setMessages((prev) => [...prev, ...r.messages]);
+      setMessages((prev) => mergeMsgs(prev, r.messages));
       sinceRef.current = r.messages[r.messages.length - 1].createdAt;
     }
   }, [phone, peer]);
@@ -56,7 +64,7 @@ export default function ThreadPage() {
     setText("");
     const r = await sendMessage(phone, name, peer, body);
     if (r.ok && r.message) {
-      setMessages((p) => [...p, r.message!]);
+      setMessages((p) => mergeMsgs(p, [r.message!]));
       sinceRef.current = r.message.createdAt;
     }
   }

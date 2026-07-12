@@ -9,6 +9,34 @@ import { useMounted } from "@/lib/useStore";
 import { syncMistakes, tutorChat, type ChatTurn } from "@/lib/tutor";
 import { FeedbackThumbs } from "@/components/FeedbackThumbs";
 
+// Mini markdown renderer for coach replies: **bold**, bullet lists, paragraphs.
+// ponytail: no markdown dependency for three constructs; swap for react-markdown if the coach ever needs tables/code.
+function Bold({ text }: { text: string }) {
+  const parts = text.split(/\*\*(.+?)\*\*/g);
+  return <>{parts.map((p, i) => (i % 2 ? <strong key={i}>{p}</strong> : p))}</>;
+}
+function Md({ text }: { text: string }) {
+  const blocks = text.replace(/\r/g, "").split(/\n{2,}/).filter((b) => b.trim());
+  return (
+    <div className="flex flex-col gap-2">
+      {blocks.map((block, bi) => {
+        const lines = block.split("\n").filter((l) => l.trim());
+        const isList = lines.every((l) => /^\s*([-*•]|\d+[.)])\s+/.test(l));
+        if (isList) {
+          return (
+            <ul key={bi} className="flex list-disc flex-col gap-1 pl-4">
+              {lines.map((l, li) => (
+                <li key={li}><Bold text={l.replace(/^\s*([-*•]|\d+[.)])\s+/, "")} /></li>
+              ))}
+            </ul>
+          );
+        }
+        return <p key={bi}><Bold text={lines.join(" ")} /></p>;
+      })}
+    </div>
+  );
+}
+
 const SUGGESTIONS = [
   "Why do I keep losing marks?",
   "What should I revise first?",
@@ -118,10 +146,10 @@ export default function TutorPage() {
               className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-[0.95rem] leading-relaxed ${
                 m.role === "user"
                   ? "self-end bg-[var(--color-violet)] text-white"
-                  : "self-start card whitespace-pre-wrap"
+                  : "self-start card"
               }`}
             >
-              {m.content}
+              {m.role === "user" ? m.content : <Md text={m.content} />}
             </div>
           ))}
           {thinking && (
