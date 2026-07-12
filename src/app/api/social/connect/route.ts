@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase, supabaseConfigured, upsertStudent } from "@/lib/supabaseServer";
+import { supabase, supabaseConfigured, upsertStudent, broadcast } from "@/lib/supabaseServer";
 import { canonicalPair, normalizeHandle } from "@/lib/social";
 
 export const maxDuration = 30;
@@ -36,6 +36,7 @@ export async function POST(req: NextRequest) {
       // pending: if the other person already requested me, accept it
       if (f.requester_phone === other) {
         await supabase().from("friendships").update({ status: "accepted", updated_at: new Date().toISOString() }).eq("id", f.id);
+        await broadcast(`user:${other}`, "social", { kind: "accepted" });
         return NextResponse.json({ ok: true, status: "accepted" });
       }
       return NextResponse.json({ ok: true, status: "pending" }); // my own pending already exists
@@ -44,6 +45,7 @@ export async function POST(req: NextRequest) {
     await supabase().from("friendships").insert({
       requester_phone: me, addressee_phone: other, low_phone: low, high_phone: high, status: "pending",
     });
+    await broadcast(`user:${other}`, "social", { kind: "request" });
     return NextResponse.json({ ok: true, status: "pending" });
   } catch (err) {
     console.error("connect error", err);

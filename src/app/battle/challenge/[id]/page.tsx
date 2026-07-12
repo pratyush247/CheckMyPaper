@@ -7,6 +7,7 @@ import { getAccount } from "@/lib/store";
 import { useMounted } from "@/lib/useStore";
 import { fmtTime } from "@/lib/battle";
 import { getChallenge, submitChallengeScore, type RankedScore } from "@/lib/socialClient";
+import { useRealtime, useFocusRefetch } from "@/lib/realtimeClient";
 
 interface QuizQuestion { q: string; options: string[]; answer: number; explanation: string }
 type Phase = "loading" | "quiz" | "result" | "error";
@@ -52,16 +53,15 @@ export default function ChallengePlayPage() {
     })();
   }, [mounted, id, phone]);
 
-  // On the result screen, keep standings fresh until everyone has played.
-  useEffect(() => {
+  // On the result screen, standings update the moment anyone else finishes.
+  useRealtime(phase === "result" ? `battle:${id}` : null, (event, payload) => {
+    if (event === "score") setRanked((payload as { ranked: RankedScore[] }).ranked);
+  });
+  useFocusRefetch(async () => {
     if (phase !== "result") return;
-    const t = setInterval(async () => {
-      const c = await getChallenge(id).catch(() => null);
-      if (c?.scores) setRanked(c.scores);
-      if (c?.status === "closed") clearInterval(t);
-    }, 4000);
-    return () => clearInterval(t);
-  }, [phase, id]);
+    const c = await getChallenge(id).catch(() => null);
+    if (c?.scores) setRanked(c.scores);
+  });
 
   // timer
   useEffect(() => {

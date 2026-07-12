@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase, supabaseConfigured } from "@/lib/supabaseServer";
+import { supabase, supabaseConfigured, broadcast } from "@/lib/supabaseServer";
 import { rankChallenge } from "@/lib/social";
 
 export const maxDuration = 30;
@@ -26,13 +26,16 @@ export async function POST(req: NextRequest) {
     if (allPlayed && c.data?.status !== "closed") {
       await supabase().from("challenges").update({ status: "closed" }).eq("id", challengeId);
       if (c.data?.thread_id) {
-        await supabase().from("dm_messages").insert({
+        const ins = await supabase().from("dm_messages").insert({
           thread_id: c.data.thread_id, sender_phone: phone, kind: "result", body: `Result: ${c.data.topic}`,
           meta: { challengeId, ranked },
-        });
+        }).select("*").single();
         await supabase().from("dm_threads").update({ last_message_at: new Date().toISOString() }).eq("id", c.data.thread_id);
+        const m = ins.data as Record<string, unknown> | null;
+        if (m) await broadcast(`dm:${c.data.thread_id}`, "message", { id: m.id, sender: m.sender_phone, body: m.body, kind: m.kind, meta: m.meta ?? null, createdAt: m.created_at });
       }
     }
+    await broadcast(`battle:${challengeId}`, "score", { ranked, closed: allPlayed });
     return NextResponse.json({ ok: true, ranked, closed: allPlayed });
   } catch (err) {
     console.error("challenge score error", err);

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { listGroups, createGroup, joinGroup, getGroupMembers, addToGroup, type Group, type GroupMember } from "@/lib/multiplayer";
+import { useRealtime, useFocusRefetch } from "@/lib/realtimeClient";
 
 const MAX = 8;
 type Friend = { handle: string; phone: string; name?: string };
@@ -31,6 +32,11 @@ export function GroupSection({ phone, name, friends }: { phone: string; name: st
   }, [phone, active, loadMembers]);
 
   useEffect(() => { refresh(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [phone]);
+
+  // Both phones update instantly when anyone joins or is added to the squad.
+  useRealtime(active ? `squad:${active}` : null, () => active && loadMembers(active));
+  useRealtime(phone ? `user:${phone}` : null, () => refresh());
+  useFocusRefetch(refresh);
 
   async function doCreate() {
     if (!groupName.trim()) return;

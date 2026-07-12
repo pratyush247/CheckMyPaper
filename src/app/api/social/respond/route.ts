@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase, supabaseConfigured } from "@/lib/supabaseServer";
+import { supabase, supabaseConfigured, broadcast } from "@/lib/supabaseServer";
 
 export const maxDuration = 30;
 
@@ -24,6 +24,8 @@ export async function POST(req: NextRequest) {
     } else {
       await supabase().from("friendships").delete().eq("id", id); // decline
     }
+    const peer = me === row.data.requester_phone ? row.data.addressee_phone : row.data.requester_phone;
+    await broadcast(`user:${peer}`, "social", { kind: action });
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("respond error", err);

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase, supabaseConfigured, upsertStudent } from "@/lib/supabaseServer";
+import { supabase, supabaseConfigured, upsertStudent, broadcast } from "@/lib/supabaseServer";
 import { canonicalPair, blockState } from "@/lib/social";
 
 export const maxDuration = 30;
@@ -65,7 +65,9 @@ export async function POST(req: NextRequest) {
 
     const ins = await supabase().from("dm_messages").insert({ thread_id: threadId, sender_phone: me, body, kind: "text" }).select("*").single();
     await supabase().from("dm_threads").update({ last_message_at: new Date().toISOString() }).eq("id", threadId);
-    return NextResponse.json({ ok: true, message: mapMsg(ins.data as Record<string, unknown>) });
+    const message = mapMsg(ins.data as Record<string, unknown>);
+    await broadcast(`dm:${threadId}`, "message", message);
+    return NextResponse.json({ ok: true, message });
   } catch (err) {
     console.error("messages post error", err);
     return NextResponse.json({ ok: false, error: "failed" }, { status: 500 });

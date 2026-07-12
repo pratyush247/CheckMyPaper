@@ -6,6 +6,7 @@ import { TopBar, AppLoading } from "@/components/ui";
 import { getAccount } from "@/lib/store";
 import { useStoreVersion, useMounted } from "@/lib/useStore";
 import { getFriends, getMessages, sendMessage, respond, report, getChallengeTopics, createVote, getVote, castVote, type ChatMessage, type FriendInfo, type VoteOption, type VoteView } from "@/lib/socialClient";
+import { useRealtime, useFocusRefetch } from "@/lib/realtimeClient";
 
 // De-dupe by server id: an in-flight poll can race the optimistic send()
 // append and return the same message — merging by id keeps exactly one copy.
@@ -29,6 +30,7 @@ export default function ThreadPage() {
   const [text, setText] = useState("");
   const [showChallenge, setShowChallenge] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [threadId, setThreadId] = useState<string | null>(null);
   const sinceRef = useRef<string | undefined>(undefined);
   const threadRef = useRef<string | null>(null);
   const swipe = useRef<{ x: number; y: number } | null>(null);
@@ -45,18 +47,22 @@ export default function ThreadPage() {
     if (!phone || !peer) return;
     const r = await getMessages(phone, peer, sinceRef.current);
     threadRef.current = r.threadId;
+    setThreadId(r.threadId);
     if (r.messages.length) {
       setMessages((prev) => mergeMsgs(prev, r.messages));
       sinceRef.current = r.messages[r.messages.length - 1].createdAt;
     }
   }, [phone, peer]);
 
+  // Load history once, then messages arrive by realtime push; a focus refetch
+  // heals anything missed while the tab was backgrounded.
   useEffect(() => {
-    if (!peer) return;
-    poll();
-    const id = setInterval(poll, 2500);
-    return () => clearInterval(id);
+    if (peer) poll();
   }, [peer, poll]);
+  useRealtime(threadId ? `dm:${threadId}` : null, (event, payload) => {
+    if (event === "message") setMessages((prev) => mergeMsgs(prev, [payload as ChatMessage]));
+  });
+  useFocusRefetch(poll);
 
   async function send() {
     const body = text.trim();

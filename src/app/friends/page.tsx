@@ -7,6 +7,7 @@ import { getAccount } from "@/lib/store";
 import { useStoreVersion, useMounted } from "@/lib/useStore";
 import { getMe, claimHandle, searchHandles, connect, respond, getFriends, type FriendInfo, type PendingReq } from "@/lib/socialClient";
 import { GroupSection } from "@/components/GroupSection";
+import { useRealtime } from "@/lib/realtimeClient";
 
 export default function FriendsPage() {
   const v = useStoreVersion();
@@ -48,6 +49,9 @@ export default function FriendsPage() {
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  // Incoming friend requests / acceptances appear without a reload.
+  useRealtime(phone ? `user:${phone}` : null, () => refresh());
 
   // ?add=CODE deep link (read client-side to avoid useSearchParams prerender constraints)
   useEffect(() => {

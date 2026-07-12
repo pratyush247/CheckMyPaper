@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase, supabaseConfigured, upsertStudent } from "@/lib/supabaseServer";
+import { supabase, supabaseConfigured, upsertStudent, broadcast } from "@/lib/supabaseServer";
 import { canonicalPair, normalizeHandle } from "@/lib/social";
 
 export const maxDuration = 30;
@@ -83,6 +83,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ ok: false, error: "Squad is full (8 max)" }, { status: 409 });
       }
       await supabase().from("group_members").upsert({ group_code: code, phone }, { onConflict: "group_code,phone" });
+      await broadcast(`squad:${code}`, "members", { code });
       return NextResponse.json({ ok: true, code: group.code, name: group.name });
     }
 
@@ -110,6 +111,8 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ ok: false, error: "Squad is full (8 max)" }, { status: 409 });
       }
       await supabase().from("group_members").upsert({ group_code: code, phone: target }, { onConflict: "group_code,phone" });
+      await broadcast(`squad:${code}`, "members", { code });
+      await broadcast(`user:${target}`, "squad-added", { code });
       return NextResponse.json({ ok: true, code });
     }
 

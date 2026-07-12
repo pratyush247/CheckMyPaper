@@ -1,4 +1,4 @@
-import { supabase, studentClass } from "@/lib/supabaseServer";
+import { supabase, studentClass, broadcast } from "@/lib/supabaseServer";
 import { generateQuiz } from "@/lib/ai";
 
 // Server-only. Generates a frozen 10-question set and inserts a challenge,
@@ -32,11 +32,13 @@ export async function createChallengeRecord(opts: {
   const challengeId = ins.data?.id as string;
 
   if (opts.threadId && opts.postCard !== false) {
-    await supabase().from("dm_messages").insert({
+    const card = await supabase().from("dm_messages").insert({
       thread_id: opts.threadId, sender_phone: opts.creatorPhone, kind: "challenge",
       body: `Challenge: ${opts.topic}`, meta: { challengeId, topic: opts.topic },
-    });
+    }).select("*").single();
     await supabase().from("dm_threads").update({ last_message_at: new Date().toISOString() }).eq("id", opts.threadId);
+    const m = card.data as Record<string, unknown> | null;
+    if (m) await broadcast(`dm:${opts.threadId}`, "message", { id: m.id, sender: m.sender_phone, body: m.body, kind: m.kind, meta: m.meta ?? null, createdAt: m.created_at });
   }
   return { challengeId, questions };
 }
