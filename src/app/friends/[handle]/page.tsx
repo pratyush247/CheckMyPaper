@@ -29,6 +29,7 @@ export default function ThreadPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [text, setText] = useState("");
   const [showChallenge, setShowChallenge] = useState(false);
+  const [showStickers, setShowStickers] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [threadId, setThreadId] = useState<string | null>(null);
   const sinceRef = useRef<string | undefined>(undefined);
@@ -73,6 +74,12 @@ export default function ThreadPage() {
       setMessages((p) => mergeMsgs(p, [r.message!]));
       sinceRef.current = r.message.createdAt;
     }
+  }
+  async function sendSticker(s: string) {
+    if (!peer) return;
+    setShowStickers(false);
+    const r = await sendMessage(phone, name, peer, s, "sticker");
+    if (r.ok && r.message) setMessages((p) => mergeMsgs(p, [r.message!]));
   }
   async function startVote(options: VoteOption[]) {
     if (!peer || options.length === 0) return;
@@ -130,9 +137,18 @@ export default function ThreadPage() {
 
       {showChallenge && peer && <TopicPicker me={phone} peer={peer} onStart={startVote} onClose={() => setShowChallenge(false)} />}
 
+      {showStickers && (
+        <div className="grid grid-cols-8 gap-1 border-t border-[var(--color-line)] bg-[var(--color-card)] p-3">
+          {STICKERS.map((s) => (
+            <button key={s} onClick={() => sendSticker(s)} className="rounded-xl p-1 text-2xl active:bg-[var(--color-paper-2)]" aria-label={`Send ${s}`}>{s}</button>
+          ))}
+        </div>
+      )}
+
       <div className="border-t border-[var(--color-line)] bg-[var(--color-paper)]/95 px-3 py-3 backdrop-blur" style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}>
         <div className="flex items-center gap-2">
-          <button onClick={() => setShowChallenge((s) => !s)} aria-label="Challenge" className="btn btn-ghost shrink-0 !px-3 !py-2 text-sm">⚔️</button>
+          <button onClick={() => { setShowChallenge(false); setShowStickers((s) => !s); }} aria-label="Stickers" className="btn btn-ghost shrink-0 !px-3 !py-2 text-sm">😄</button>
+          <button onClick={() => { setShowStickers(false); setShowChallenge((s) => !s); }} aria-label="Challenge" className="btn btn-ghost shrink-0 !px-3 !py-2 text-sm">⚔️</button>
           <input
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -147,7 +163,17 @@ export default function ThreadPage() {
   );
 }
 
+// Bundled sticker pack — friends-only fun without an external GIF API.
+const STICKERS = ["🔥", "😂", "💀", "🫡", "😭", "🤯", "👑", "🐐", "💪", "🥶", "🤝", "🎯", "🚀", "🧠", "😤", "🏆"];
+
 function ChatBubble({ m, mine, me }: { m: ChatMessage; mine: boolean; me: string }) {
+  if (m.kind === "sticker") {
+    return (
+      <div className={`my-1 flex ${mine ? "justify-end" : "justify-start"}`}>
+        <span className="px-2 text-5xl leading-none">{m.body}</span>
+      </div>
+    );
+  }
   if (m.kind === "vote") {
     const meta = m.meta as { voteId?: string } | null;
     return meta?.voteId ? <VoteCard voteId={meta.voteId} me={me} /> : null;

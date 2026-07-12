@@ -6,7 +6,7 @@ import { TopBar, AppLoading } from "@/components/ui";
 import { getAccount } from "@/lib/store";
 import { useMounted } from "@/lib/useStore";
 import { fmtTime } from "@/lib/battle";
-import { getChallenge, submitChallengeScore, type RankedScore } from "@/lib/socialClient";
+import { getChallenge, submitChallengeScore, getPeers, connect, type RankedScore, type PeerInfo } from "@/lib/socialClient";
 import { useRealtime, useFocusRefetch } from "@/lib/realtimeClient";
 
 interface QuizQuestion { q: string; options: string[]; answer: number; explanation: string }
@@ -25,6 +25,7 @@ export default function ChallengePlayPage() {
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState<number[]>([]);
   const [ranked, setRanked] = useState<RankedScore[]>([]);
+  const [participants, setParticipants] = useState<string[]>([]);
   const startRef = useRef(0);
   const [now, setNow] = useState(0);
 
@@ -41,6 +42,7 @@ export default function ChallengePlayPage() {
       }
       setTopic(c.topic);
       setQuiz(c.questions as QuizQuestion[]);
+      setParticipants(c.participants ?? []);
       if ((c.scores ?? []).some((s) => s.phone === phone)) {
         setRanked(c.scores);
         setPhase("result");
@@ -130,6 +132,8 @@ export default function ChallengePlayPage() {
             </>
           )}
 
+          <FriendPopup me={phone} name={account?.name ?? ""} phones={participants} />
+
           <button onClick={() => router.push("/")} className="btn btn-primary mt-5 w-full">Home →</button>
         </div>
       </main>
@@ -173,5 +177,48 @@ export default function ChallengePlayPage() {
         )}
       </div>
     </main>
+  );
+}
+
+// Post-battle "add as a friend?" card: the players I just fought who aren't my
+// friends yet, with the bio they flaunt. Bio is only ever shown in this
+// friend-request context — never in search.
+function FriendPopup({ me, name, phones }: { me: string; name: string; phones: string[] }) {
+  const [peers, setPeers] = useState<PeerInfo[]>([]);
+  const [sent, setSent] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const others = phones.filter((p) => p !== me);
+    if (!me || others.length === 0) return;
+    getPeers(me, others).then((r) => setPeers(r.peers.filter((p) => p.status === "none"))).catch(() => {});
+  }, [me, phones]);
+
+  async function add(handle: string) {
+    const r = await connect(me, name, "handle", handle);
+    if (r.ok) setSent((s) => new Set(s).add(handle));
+  }
+
+  if (peers.length === 0) return null;
+  return (
+    <div className="card mt-5 bg-[var(--color-violet-soft)] p-4">
+      <h3 className="text-sm font-bold text-[var(--color-violet-ink)]">Good game — add them? 🤝</h3>
+      <ul className="mt-2 flex flex-col gap-2">
+        {peers.map((p) => (
+          <li key={p.phone} className="flex items-center justify-between gap-2 rounded-xl bg-[var(--color-card)] px-3 py-2">
+            <span className="min-w-0 text-sm">
+              <span className="font-semibold">@{p.handle}</span>
+              {p.bio && <span className="block truncate text-xs text-[var(--color-ink-soft)]">{p.bio}</span>}
+            </span>
+            <button
+              onClick={() => add(p.handle)}
+              disabled={sent.has(p.handle)}
+              className="btn btn-primary shrink-0 !px-3 !py-1 text-xs disabled:opacity-60"
+            >
+              {sent.has(p.handle) ? "Requested ✓" : "Add friend"}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

@@ -14,13 +14,39 @@ async function memberCount(code: string): Promise<number> {
   return count ?? 0;
 }
 
+// Accepted friendship between two students?
+async function isFriend(a: string, b: string): Promise<boolean> {
+  const [low, high] = canonicalPair(a, b);
+  const { data } = await supabase().from("friendships").select("status").eq("low_phone", low).eq("high_phone", high).maybeSingle();
+  return data?.status === "accepted";
+}
+
 // GET /api/group?phone=...           → groups this student belongs to
 // GET /api/group?members=CODE        → members of a group (with @handle + name)
+// GET /api/group?invites=PHONE       → my pending squad invites
 export async function GET(req: NextRequest) {
   if (!supabaseConfigured()) return NextResponse.json({ configured: false, groups: [], members: [] });
   const url = new URL(req.url);
   const membersCode = url.searchParams.get("members");
+  const invitesFor = url.searchParams.get("invites")?.replace(/\D/g, "");
   try {
+    if (invitesFor) {
+      const { data: inv } = await supabase().from("squad_invites").select("id, group_code, from_phone").eq("to_phone", invitesFor).eq("status", "pending");
+      const rows = inv ?? [];
+      if (rows.length === 0) return NextResponse.json({ configured: true, invites: [] });
+      const codes = rows.map((r) => r.group_code as string);
+      const froms = rows.map((r) => r.from_phone as string);
+      const { data: gs } = await supabase().from("groups").select("code, name").in("code", codes);
+      const { data: hs } = await supabase().from("handles").select("phone, handle").in("phone", froms);
+      const gName = new Map((gs ?? []).map((g) => [g.code as string, g.name as string]));
+      const hFor = new Map((hs ?? []).map((h) => [h.phone as string, h.handle as string]));
+      const invites = rows.map((r) => ({
+        id: r.id as string, code: r.group_code as string,
+        groupName: gName.get(r.group_code as string) ?? "Squad",
+        from: hFor.get(r.from_phone as string) ?? "",
+      }));
+      return NextResponse.json({ configured: true, invites });
+    }
     if (membersCode) {
       const code = membersCode.trim().toUpperCase();
       const { data: mem } = await supabase().from("group_members").select("phone, joined_at").eq("group_code", code).order("joined_at", { ascending: true });
@@ -76,9 +102,13 @@ export async function POST(req: NextRequest) {
 
     if (b.action === "join") {
       const code = String(b.code || "").trim().toUpperCase();
-      const { data: group } = await supabase().from("groups").select("code, name").eq("code", code).maybeSingle();
+      const { data: group } = await supabase().from("groups").select("code, name, owner_phone").eq("code", code).maybeSingle();
       if (!group) return NextResponse.json({ ok: false, error: "No group with that code" }, { status: 404 });
       const mine = await supabase().from("group_members").select("phone").eq("group_code", code).eq("phone", phone).maybeSingle();
+      // Squads are friends-only: the code works only if the owner accepted you.
+      if (!mine.data && group.owner_phone !== phone && !(await isFriend(phone, group.owner_phone as string))) {
+        return NextResponse.json({ ok: false, error: "Squads are friends-only — add the squad owner as a friend first" }, { status: 403 });
+      }
       if (!mine.data && (await memberCount(code)) >= MAX_MEMBERS) {
         return NextResponse.json({ ok: false, error: "Squad is full (8 max)" }, { status: 409 });
       }
@@ -87,8 +117,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, code: group.code, name: group.name });
     }
 
-    // Add an accepted friend to my group by @handle (only accepted friends).
-    if (b.action === "add") {
+    // Ask an accepted friend to join my squad — lands on their phone as a request.
+    if (b.action === "invite") {
       const code = String(b.code || "").trim().toUpperCase();
       const handle = normalizeHandle(String(b.handle || ""));
       const g = await supabase().from("groups").select("code").eq("code", code).maybeSingle();
@@ -100,20 +130,40 @@ export async function POST(req: NextRequest) {
       if (!h.data) return NextResponse.json({ ok: false, error: "No one with that @handle" }, { status: 404 });
       const target = h.data.phone as string;
       if (target === phone) return NextResponse.json({ ok: false, error: "That's you" }, { status: 400 });
-
-      const [low, high] = canonicalPair(phone, target);
-      const f = await supabase().from("friendships").select("status").eq("low_phone", low).eq("high_phone", high).maybeSingle();
-      if (!f.data || f.data.status !== "accepted") {
-        return NextResponse.json({ ok: false, error: "You can only add friends who accepted your request" }, { status: 403 });
+      if (!(await isFriend(phone, target))) {
+        return NextResponse.json({ ok: false, error: "You can only invite friends who accepted your request" }, { status: 403 });
       }
-      const already = await supabase().from("group_members").select("phone").eq("group_code", code).eq("phone", target).maybeSingle();
-      if (!already.data && (await memberCount(code)) >= MAX_MEMBERS) {
+      if ((await memberCount(code)) >= MAX_MEMBERS) {
         return NextResponse.json({ ok: false, error: "Squad is full (8 max)" }, { status: 409 });
       }
-      await supabase().from("group_members").upsert({ group_code: code, phone: target }, { onConflict: "group_code,phone" });
+      await supabase().from("squad_invites").upsert(
+        { group_code: code, from_phone: phone, to_phone: target, status: "pending" },
+        { onConflict: "group_code,to_phone" },
+      );
+      await broadcast(`user:${target}`, "squad-invite", { code });
+      return NextResponse.json({ ok: true, invited: true });
+    }
+
+    // Accept / decline a squad invite (on the invitee's phone).
+    if (b.action === "respondInvite") {
+      const inviteId = String(b.inviteId || "");
+      const accept = Boolean(b.accept);
+      const inv = await supabase().from("squad_invites").select("id, group_code, from_phone, to_phone, status").eq("id", inviteId).maybeSingle();
+      if (!inv.data || inv.data.to_phone !== phone) return NextResponse.json({ ok: false, error: "not found" }, { status: 404 });
+      if (inv.data.status !== "pending") return NextResponse.json({ ok: true, status: inv.data.status });
+      if (!accept) {
+        await supabase().from("squad_invites").update({ status: "declined" }).eq("id", inviteId);
+        return NextResponse.json({ ok: true, status: "declined" });
+      }
+      const code = inv.data.group_code as string;
+      if ((await memberCount(code)) >= MAX_MEMBERS) {
+        return NextResponse.json({ ok: false, error: "Squad is full (8 max)" }, { status: 409 });
+      }
+      await supabase().from("group_members").upsert({ group_code: code, phone }, { onConflict: "group_code,phone" });
+      await supabase().from("squad_invites").update({ status: "accepted" }).eq("id", inviteId);
       await broadcast(`squad:${code}`, "members", { code });
-      await broadcast(`user:${target}`, "squad-added", { code });
-      return NextResponse.json({ ok: true, code });
+      await broadcast(`user:${inv.data.from_phone}`, "squad-invite-accepted", { code });
+      return NextResponse.json({ ok: true, status: "accepted", code });
     }
 
     return NextResponse.json({ ok: false, error: "unknown action" }, { status: 400 });

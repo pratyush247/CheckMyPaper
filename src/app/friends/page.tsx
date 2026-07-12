@@ -5,7 +5,7 @@ import Link from "next/link";
 import { TopBar, AppLoading } from "@/components/ui";
 import { getAccount } from "@/lib/store";
 import { useStoreVersion, useMounted } from "@/lib/useStore";
-import { getMe, claimHandle, searchHandles, connect, respond, getFriends, type FriendInfo, type PendingReq } from "@/lib/socialClient";
+import { getMe, claimHandle, searchHandles, connect, respond, getFriends, saveBio, type FriendInfo, type PendingReq } from "@/lib/socialClient";
 import { GroupSection } from "@/components/GroupSection";
 import { useRealtime } from "@/lib/realtimeClient";
 
@@ -19,7 +19,8 @@ export default function FriendsPage() {
   const [ready, setReady] = useState(false);
   const [configured, setConfigured] = useState(true);
   const [handle, setHandle] = useState<string | null>(null);
-  const [invite, setInvite] = useState<string | null>(null);
+  const [bio, setBio] = useState("");
+  const [bioSaved, setBioSaved] = useState(false);
   const [claim, setClaim] = useState("");
   const [friends, setFriends] = useState<FriendInfo[]>([]);
   const [incoming, setIncoming] = useState<PendingReq[]>([]);
@@ -32,7 +33,7 @@ export default function FriendsPage() {
       const me = await getMe(phone);
       setConfigured(me.configured);
       setHandle(me.handle);
-      setInvite(me.inviteCode);
+      setBio((prev) => prev || me.bio || "");
       if (me.configured) {
         const f = await getFriends(phone);
         setFriends(f.friends);
@@ -53,19 +54,11 @@ export default function FriendsPage() {
   // Incoming friend requests / acceptances appear without a reload.
   useRealtime(phone ? `user:${phone}` : null, () => refresh());
 
-  // ?add=CODE deep link (read client-side to avoid useSearchParams prerender constraints)
-  useEffect(() => {
-    if (!phone || !handle) return;
-    const code = new URLSearchParams(window.location.search).get("add");
-    if (!code) return;
-    connect(phone, name, "code", code).then((r) => {
-      setMsg(r.ok ? "Request sent!" : r.error || "");
-      window.history.replaceState(null, "", "/friends");
-      refresh();
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phone, handle]);
-
+  async function doBio() {
+    await saveBio(phone, bio.trim());
+    setBioSaved(true);
+    setTimeout(() => setBioSaved(false), 1500);
+  }
   async function doClaim() {
     const r = await claimHandle(phone, name, claim);
     if (r.ok) { setMsg(""); refresh(); } else setMsg(r.error || "Couldn't claim");
@@ -134,12 +127,16 @@ export default function FriendsPage() {
             <div className="card animate-fade-up p-4">
               <p className="text-xs text-[var(--color-ink-soft)]">You are</p>
               <p className="text-lg font-bold">@{handle}</p>
-              <button
-                onClick={() => navigator.clipboard?.writeText(`${location.origin}/friends?add=${invite}`).then(() => setMsg("Invite link copied!"))}
-                className="mt-2 rounded-full bg-[var(--color-violet-soft)] px-3 py-1 text-xs font-bold text-[var(--color-violet-ink)]"
-              >
-                Copy invite link ({invite})
-              </button>
+              <div className="mt-2 flex gap-2">
+                <input
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value.slice(0, 120))}
+                  onKeyDown={(e) => e.key === "Enter" && doBio()}
+                  placeholder="Flaunt a bio — shown with your friend requests"
+                  className="min-w-0 flex-1 rounded-xl border border-[var(--color-line)] bg-[var(--color-card)] px-3 py-1.5 text-xs outline-none focus:border-[var(--color-violet)]"
+                />
+                <button onClick={doBio} className="btn btn-line shrink-0 !px-3 !py-1.5 text-xs">{bioSaved ? "Saved ✓" : "Save"}</button>
+              </div>
             </div>
 
             <GroupSection phone={phone} name={name} friends={friends} />
@@ -159,9 +156,12 @@ export default function FriendsPage() {
               <div className="card p-4">
                 <h2 className="text-sm font-bold">Requests</h2>
                 {incoming.map((r) => (
-                  <div key={r.id} className="mt-2 flex items-center justify-between rounded-xl bg-[var(--color-paper-2)] px-3 py-2">
-                    <span className="text-sm font-semibold">@{r.handle}</span>
-                    <span className="flex gap-2">
+                  <div key={r.id} className="mt-2 flex items-center justify-between gap-2 rounded-xl bg-[var(--color-paper-2)] px-3 py-2">
+                    <span className="min-w-0 text-sm">
+                      <span className="font-semibold">@{r.handle}</span>
+                      {r.bio && <span className="block truncate text-xs text-[var(--color-ink-soft)]">{r.bio}</span>}
+                    </span>
+                    <span className="flex shrink-0 gap-2">
                       <button onClick={() => accept(r.id)} className="btn btn-primary !px-3 !py-1 text-xs">Accept</button>
                       <button onClick={() => decline(r.id)} className="btn btn-line !px-3 !py-1 text-xs">Decline</button>
                     </span>

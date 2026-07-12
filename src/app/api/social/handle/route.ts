@@ -12,18 +12,16 @@ export async function GET(req: NextRequest) {
   const me = (url.searchParams.get("me") || "").replace(/\D/g, "");
   if (q.length < 2) return NextResponse.json({ configured: true, results: [] });
   try {
+    // Privacy: non-friends see ONLY the @username — no name, no bio.
     const { data } = await supabase()
       .from("handles")
-      .select("handle, phone, students(name)")
+      .select("handle, phone")
       .ilike("handle", `${q}%`)
       .limit(11);
     const results = (data ?? [])
       .filter((r) => r.phone !== me)
       .slice(0, 10)
-      .map((r) => {
-        const s = Array.isArray(r.students) ? r.students[0] : r.students;
-        return { handle: r.handle as string, phone: r.phone as string, name: (s as { name: string } | null)?.name ?? "" };
-      });
+      .map((r) => ({ handle: r.handle as string, phone: r.phone as string, name: "" }));
     return NextResponse.json({ configured: true, results });
   } catch (err) {
     console.error("handle search error", err);

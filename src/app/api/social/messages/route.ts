@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
     const name = String(b.name || "").trim();
     const peer = String(b.peer || "").replace(/\D/g, "");
     const body = String(b.body || "").trim();
+    const kind = b.kind === "sticker" ? "sticker" : "text";
     if (me.length !== 10 || peer.length !== 10 || !body) return NextResponse.json({ ok: false, error: "bad input" }, { status: 400 });
     if (body.length > 2000) return NextResponse.json({ ok: false, error: "too long" }, { status: 400 });
     if (name) await upsertStudent(me, name);
@@ -63,7 +64,7 @@ export async function POST(req: NextRequest) {
     const threadId = await resolveThread(me, peer);
     if (!threadId) return NextResponse.json({ ok: false, error: "not connected" }, { status: 403 });
 
-    const ins = await supabase().from("dm_messages").insert({ thread_id: threadId, sender_phone: me, body, kind: "text" }).select("*").single();
+    const ins = await supabase().from("dm_messages").insert({ thread_id: threadId, sender_phone: me, body, kind }).select("*").single();
     await supabase().from("dm_threads").update({ last_message_at: new Date().toISOString() }).eq("id", threadId);
     const message = mapMsg(ins.data as Record<string, unknown>);
     await broadcast(`dm:${threadId}`, "message", message);

@@ -3,8 +3,9 @@ import type { RankedScore } from "@/lib/social";
 export type { RankedScore };
 
 export interface FriendInfo { id: string; phone: string; handle: string; name: string }
-export interface PendingReq { id: string; phone: string; handle: string; name: string }
-export interface ChatMessage { id: string; sender: string; body: string; kind: "text" | "challenge" | "result" | "gif" | "vote"; meta: unknown; createdAt: string }
+export interface PendingReq { id: string; phone: string; handle: string; name: string; bio?: string | null }
+export interface ChatMessage { id: string; sender: string; body: string; kind: "text" | "challenge" | "result" | "gif" | "vote" | "sticker"; meta: unknown; createdAt: string }
+export interface PeerInfo { phone: string; handle: string; bio: string | null; status: "none" | "pending" | "accepted" | "blocked" }
 export interface ChallengeView { topic: string; questions: unknown[]; participants: string[]; status: string; scores: RankedScore[] }
 
 const j = (r: Response) => r.json();
@@ -25,7 +26,11 @@ const post = (url: string, body: unknown) =>
   req(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }).then(j);
 
 export const getMe = (phone: string) =>
-  get(`/api/social/me?phone=${phone}`) as Promise<{ configured: boolean; handle: string | null; inviteCode: string | null; pending: number }>;
+  get(`/api/social/me?phone=${phone}`) as Promise<{ configured: boolean; handle: string | null; inviteCode: string | null; bio: string | null; pending: number }>;
+export const saveBio = (phone: string, bio: string) =>
+  post("/api/social/me", { phone, bio }) as Promise<{ ok: boolean; bio: string | null }>;
+export const getPeers = (me: string, phones: string[]) =>
+  get(`/api/social/peers?me=${me}&phones=${phones.join(",")}`) as Promise<{ peers: PeerInfo[] }>;
 export const claimHandle = (phone: string, name: string, handle: string) =>
   post("/api/social/handle", { phone, name, handle }) as Promise<{ ok: boolean; handle?: string; inviteCode?: string; error?: string }>;
 export const searchHandles = (q: string, me: string) =>
@@ -40,8 +45,8 @@ export const getFriends = (phone: string) =>
 
 export const getMessages = (phone: string, peer: string, since?: string) =>
   get(`/api/social/messages?phone=${phone}&peer=${peer}${since ? `&since=${encodeURIComponent(since)}` : ""}`) as Promise<{ threadId: string | null; messages: ChatMessage[] }>;
-export const sendMessage = (phone: string, name: string, peer: string, body: string) =>
-  post("/api/social/messages", { phone, name, peer, body }) as Promise<{ ok: boolean; message?: ChatMessage; error?: string }>;
+export const sendMessage = (phone: string, name: string, peer: string, body: string, kind: "text" | "sticker" = "text") =>
+  post("/api/social/messages", { phone, name, peer, body, kind }) as Promise<{ ok: boolean; message?: ChatMessage; error?: string }>;
 
 export const createChallenge = (phone: string, name: string, topic: string, opts: { subject?: string; participants?: string[]; groupCode?: string; threadId?: string }) =>
   post("/api/social/challenge", { phone, name, topic, ...opts }) as Promise<{ ok: boolean; challengeId?: string; questions?: unknown[]; error?: string }>;
