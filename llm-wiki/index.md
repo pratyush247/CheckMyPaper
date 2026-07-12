@@ -81,3 +81,24 @@ Local-first (browser store) with a Supabase backend for multiplayer + tutor RAG.
 ## Deploy
 GitHub `pratyush247/CheckMyPaper` (private) → Vercel `https://checkmypaper.vercel.app`.
 Redeploy: `vercel --prod` (CLI at `~/.hermes/node/bin/vercel`). Auto-deploy on push not connected.
+
+## v4.1 delta (2026-07-12)
+- **Realtime:** `src/lib/realtimeClient.ts` (browser subscribe: useRealtime,
+  useFocusRefetch) + `broadcast()` in `src/lib/supabaseServer.ts` (HTTP
+  Broadcast, service-role). Channels: `dm:{threadId}`, `squad:{code}`,
+  `battle:{challengeId}`, `user:{phone}`. No polling remains.
+- **Syllabus:** `src/lib/syllabus.ts` — static JEE syllabus + pickChallengeTopic
+  (common weak → ladder, difficulty tiers). Voting system deleted.
+- **Rating:** `src/lib/rating.ts` — perfScore (50/30/20) + eloUpdate; settled in
+  `api/social/challenge/score`; stats via `api/battle/stats` (?phone|?code|?global).
+- **Matchmaking:** `api/battle/match` + `match_queue`; UI `components/PlayOnline.tsx`.
+- **Social v2:** friends-only squads + `squad_invites` (api/group actions
+  invite/respondInvite), bios (`api/social/me` POST), `api/social/peers`
+  (post-battle friend popup), stickers (dm kind `sticker`).
+- **Battle review:** store fns in `src/lib/store.ts` (BattleReview*), page
+  `app/battle/review/[id]`, home pending tile.
+- **UI:** `components/BattleStats.tsx` (squad/personal/global boards),
+  `components/PullToRefresh.tsx`, swipe-nav inside `components/BottomNav.tsx`.
+- **Migrations:** 0008 (bio, squad_invites, sticker kind, challenges.subject,
+  drop challenge_votes), 0009 (rating + battle_results), 0010 (match_queue).
+- **Env (new, browser-safe):** NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY.

@@ -7,6 +7,7 @@ import { getAccount } from "@/lib/store";
 import { useStoreVersion, useMounted } from "@/lib/useStore";
 import { getMe, claimHandle, searchHandles, connect, respond, getFriends, saveBio, type FriendInfo, type PendingReq } from "@/lib/socialClient";
 import { GroupSection } from "@/components/GroupSection";
+import { PullToRefresh } from "@/components/PullToRefresh";
 import { useRealtime } from "@/lib/realtimeClient";
 
 export default function FriendsPage() {
@@ -111,6 +112,7 @@ export default function FriendsPage() {
   return (
     <main className="pb-28">
       <TopBar title="Friends 👋" back />
+      <PullToRefresh onRefresh={refresh}>
       <div className="flex flex-col gap-4 px-4 pt-1">
         {!handle ? (
           <div className="card animate-fade-up p-4">
@@ -191,6 +193,7 @@ export default function FriendsPage() {
           </>
         )}
       </div>
+      </PullToRefresh>
     </main>
   );
 }

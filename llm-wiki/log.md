@@ -23,3 +23,23 @@ Append-only. Newest first.
 - `wip` Redesign UI → Antigravity "Liftoff" language: monochrome + one blue accent, solid-ink pill CTAs, calm tonal tiles, refined light display type. Token-driven re-skin (globals.css + layout fonts + FAB); no page/logic changes. See DESIGN.md
 - `wip` Ask UX: white FAB is now the recorder (breathe/glow idle, red pulse recording, floating status); removed redundant blue mic. Added loading skeleton so visual gen never feels frozen. Hinglish structured explanation (Idea/Jaise/Isliye + example). App-wide motion (fade-in per screen, staggered home grid, reduced-motion safe).
 - `wip` Social slice: /friends + chat + friend-challenges UI wired. Fixed dev-hang (font via browser `<link>`, not next/font), "Load failed" resilience (fetch retry + stale-SW cleanup), opaque handle-claim error. Added first-run @handle modal (HandleGate), common-weak-topic challenges (weak_topics synced per handle, intersected server-side) with subject/custom-topic fallback, dev seed button. Narrate page section-header spacing. Deferred work in `deferred.md`.
+
+## 2026-07-12 — v4.1: Realtime social + Play Online (7 phases, one session)
+- Phase 0 fixes: chat de-dupe (merge by id), per-viewer challenge state (D1),
+  back→home after results (D5), coach markdown rendering + structured prompt.
+- Realtime: Supabase Broadcast replaces ALL polling (dm/squad/battle/user
+  channels; anon key = channels only, RLS keeps tables closed).
+- Social v2: friends-only squads (join code gated on owner friendship, squad
+  invite requests), bios (friend-request contexts only), stickers, post-battle
+  friend popup. Personal invite links removed. Migration 0008.
+- Syllabus ladder replaced topic voting: static JEE syllabus in
+  src/lib/syllabus.ts; common weak topics first, difficulty +1 every 3 battles.
+- Battle review (~30s tap-tag) writes real paper/question/attempt records —
+  coach + weak topics learn from battles; home "review pending" tile.
+- Rating: perf = 0.5 acc + 0.3 speed + 0.2 concept; Elo-lite; battle_results
+  (0009). Squad/personal/global leaderboards.
+- Play Online: match_queue (0010), ±150 rating window widening every 10s,
+  lobbies 2/4/6/8, "start with N" after 30s, anonymous usernames.
+- Polish: swipe nav between tabs (BottomNav), PullToRefresh on Friends.
+- Migrations to run: 0008, 0009, 0010. New env: NEXT_PUBLIC_SUPABASE_URL,
+  NEXT_PUBLIC_SUPABASE_ANON_KEY (Vercel + .env.local).

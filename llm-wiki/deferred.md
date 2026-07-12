@@ -63,3 +63,36 @@ Each has an "add when" so it's a real backlog, not a graveyard.
 - Top up OpenRouter / Sarvam credit; rotate the API keys.
 - Finish Supabase MCP OAuth (needs an interactive restart).
 - Run `/brandkit` for a fuller visual identity pass.
+
+---
+
+# v4.1 build (2026-07-12) — deferred with reasons
+
+## 7. Real voice calls in squads (WebRTC)
+- **Why deferred:** a full subsystem (signaling, TURN servers, mic permissions,
+  call UX) — as big as several shipped features combined.
+- **Head start already in place:** the Supabase Realtime channels added in this
+  build double as the signaling transport later.
+- **Add when:** squads show retention (friends actually battling weekly).
+
+## 8. ML / supervised matchmaking model
+- **Why deferred:** no training data yet. Every battle now logs a
+  `battle_results` row (score, time, perf, rating) — that IS the dataset.
+- **For now:** transparent Elo-lite (K=32, pairwise by perf) + rating-window
+  matchmaking (±150, widening while waiting).
+- **Add when:** ~1k battle_results rows exist.
+
+## 9. Review tags → server-side rating
+- **What's simplified:** perf's 20% "concept" slice defaults to accuracy
+  server-side because review tags live on-device only.
+- **Add when:** reviews sync to the server — then skipping the review really
+  costs rating, as designed.
+
+## 10. External GIF search (Giphy/Tenor)
+- **Why deferred:** needs an API key + content moderation for minors.
+- **Shipped instead:** a bundled emoji sticker pack in chat.
+
+## 11. Live per-question progress ticker in online battles
+- **Why deferred:** needs client→channel broadcasts mid-quiz; results already
+  update live the second anyone finishes.
+- **Add when:** online lobbies feel "dead" while waiting for others.

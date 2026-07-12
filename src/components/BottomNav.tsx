@@ -1,8 +1,49 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import type { RecPhase } from "@/lib/recorder";
+
+// Swipe order for horizontal navigation between the main tabs.
+const SWIPE_ORDER = ["/", "/battle", "/tutor", "/progress"];
+
+// Left/right swipes move between the bottom-nav tabs. Ignores swipes that
+// start on inputs or inside horizontally scrollable elements.
+function useSwipeNav(path: string) {
+  const router = useRouter();
+  useEffect(() => {
+    const idx = SWIPE_ORDER.findIndex((p) => (p === "/" ? path === "/" : path.startsWith(p)));
+    if (idx < 0) return;
+    let start: { x: number; y: number; ok: boolean } | null = null;
+    const onStart = (e: TouchEvent) => {
+      const t = e.touches[0];
+      let el = e.target as HTMLElement | null;
+      let ok = !(el && el.closest("input, textarea, select"));
+      while (ok && el) {
+        if (el.scrollWidth > el.clientWidth + 2) ok = false; // horizontal scroller — let it scroll
+        el = el.parentElement;
+      }
+      start = { x: t.clientX, y: t.clientY, ok };
+    };
+    const onEnd = (e: TouchEvent) => {
+      const s = start; start = null;
+      if (!s || !s.ok) return;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - s.x;
+      const dy = t.clientY - s.y;
+      if (Math.abs(dx) < 60 || Math.abs(dy) > 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+      const next = SWIPE_ORDER[idx + (dx < 0 ? 1 : -1)];
+      if (next) router.push(next);
+    };
+    document.addEventListener("touchstart", onStart, { passive: true });
+    document.addEventListener("touchend", onEnd, { passive: true });
+    return () => {
+      document.removeEventListener("touchstart", onStart);
+      document.removeEventListener("touchend", onEnd);
+    };
+  }, [path, router]);
+}
 
 const tabs = [
   { href: "/", label: "Papers", icon: PaperIcon },
@@ -20,6 +61,7 @@ export type MicControl = { phase: RecPhase; seconds: number; onToggle: () => voi
 export function BottomNav({ mic }: { mic?: MicControl } = {}) {
   const path = usePathname();
   const askActive = path.startsWith("/ask");
+  useSwipeNav(path);
   return (
     <nav className="fixed bottom-0 left-1/2 z-30 w-full max-w-[30rem] -translate-x-1/2 border-t border-[var(--color-line)] bg-[var(--color-paper)]/95 backdrop-blur">
       <div className="flex items-end justify-around pb-[env(safe-area-inset-bottom)]">
