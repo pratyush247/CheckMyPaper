@@ -1,5 +1,39 @@
 import { supabase, studentClass, broadcast } from "@/lib/supabaseServer";
 import { generateQuiz } from "@/lib/ai";
+import { commonWeakTopics, type TopicRef } from "@/lib/social";
+import { pickChallengeTopic, sharedClass, type CoreSubject } from "@/lib/syllabus";
+
+// Pick the next topic for a pair from the JEE syllabus ladder: their common
+// weak areas in this subject first, else the earliest unplayed topic for their
+// shared class, stepping up in difficulty as they keep battling.
+export async function pickTopicForPair(me: string, peer: string, subject: CoreSubject): Promise<{ topic: string; difficulty: 1 | 2 | 3 }> {
+  const { data: hs } = await supabase().from("handles").select("phone, weak_topics").in("phone", [me, peer]);
+  const weakOf = (p: string): TopicRef[] => {
+    const raw = (hs ?? []).find((r) => r.phone === p)?.weak_topics;
+    return Array.isArray(raw) ? (raw as TopicRef[]) : [];
+  };
+  const commonWeak = commonWeakTopics(weakOf(me), weakOf(peer))
+    .filter((t) => t.subject === subject || t.subject === "Unknown")
+    .map((t) => t.topic);
+
+  const { data: ss } = await supabase().from("students").select("phone, class").in("phone", [me, peer]);
+  const classOf = (p: string) => ((ss ?? []).find((r) => r.phone === p)?.class as string | null) ?? null;
+
+  const { data: prior } = await supabase()
+    .from("challenges")
+    .select("topic")
+    .eq("subject", subject)
+    .contains("participant_phones", [me, peer]);
+  const played = (prior ?? []).map((c) => c.topic as string);
+
+  return pickChallengeTopic({
+    subject,
+    klass: sharedClass(classOf(me), classOf(peer)),
+    commonWeak,
+    played,
+    battlesInSubject: played.length,
+  });
+}
 
 // Server-only. Generates a frozen 10-question set and inserts a challenge,
 // optionally posting a challenge card into a DM thread. Shared by the direct
@@ -11,14 +45,16 @@ export async function createChallengeRecord(opts: {
   participants: string[];
   threadId?: string | null;
   groupCode?: string | null;
-  postCard?: boolean; // post a "challenge" DM card (skip when a vote card already shows the result)
+  difficulty?: 1 | 2 | 3;
+  postCard?: boolean; // post a "challenge" DM card (skip when the caller shows its own)
 }): Promise<{ challengeId: string; questions: unknown[] }> {
   const className = await studentClass(opts.creatorPhone).catch(() => null);
-  const questions = await generateQuiz(opts.topic, opts.subject, 10, { className: className ?? undefined });
+  const questions = await generateQuiz(opts.topic, opts.subject, 10, { className: className ?? undefined, difficulty: opts.difficulty });
   const ins = await supabase()
     .from("challenges")
     .insert({
       topic: opts.topic,
+      subject: opts.subject,
       creator_phone: opts.creatorPhone,
       question_set: questions,
       participant_phones: opts.participants,

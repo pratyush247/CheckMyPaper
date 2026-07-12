@@ -1,20 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase, supabaseConfigured, upsertStudent } from "@/lib/supabaseServer";
 import { rankChallenge } from "@/lib/social";
-import { createChallengeRecord } from "@/lib/challengeServer";
+import { createChallengeRecord, pickTopicForPair } from "@/lib/challengeServer";
+import type { CoreSubject } from "@/lib/syllabus";
 
 export const maxDuration = 120;
 
-// POST { phone, name, topic, subject?, participants?, groupCode?, threadId? }
+// POST { phone, name, subject, participants?, groupCode?, threadId?, topic? }
+// When no topic is given the server picks one from the JEE syllabus ladder:
+// the pair's common weak areas first, beginner → advanced.
 export async function POST(req: NextRequest) {
   if (!supabaseConfigured()) return NextResponse.json({ ok: false, configured: false });
   try {
     const b = await req.json();
     const me = String(b.phone || "").replace(/\D/g, "");
     const name = String(b.name || "").trim();
-    const topic = String(b.topic || "").trim();
+    let topic = String(b.topic || "").trim();
     const subject = String(b.subject || "Unknown").trim() || "Unknown";
-    if (me.length !== 10 || !topic) return NextResponse.json({ ok: false, error: "bad input" }, { status: 400 });
+    if (me.length !== 10 || (!topic && !["Physics", "Chemistry", "Maths"].includes(subject))) {
+      return NextResponse.json({ ok: false, error: "bad input" }, { status: 400 });
+    }
     if (name) await upsertStudent(me, name);
 
     let participants: string[] = Array.isArray(b.participants) ? b.participants.map((p: string) => String(p).replace(/\D/g, "")) : [];
@@ -24,11 +29,19 @@ export async function POST(req: NextRequest) {
     }
     participants = Array.from(new Set([me, ...participants].filter((p) => p.length === 10))).slice(0, 8);
 
+    let difficulty: 1 | 2 | 3 | undefined;
+    if (!topic) {
+      const peer = participants.find((p) => p !== me) ?? me;
+      const pick = await pickTopicForPair(me, peer, subject as CoreSubject);
+      topic = pick.topic;
+      difficulty = pick.difficulty;
+    }
+
     const { challengeId, questions } = await createChallengeRecord({
-      creatorPhone: me, topic, subject, participants,
+      creatorPhone: me, topic, subject, participants, difficulty,
       threadId: b.threadId ?? null, groupCode: b.groupCode ?? null,
     });
-    return NextResponse.json({ ok: true, challengeId, questions });
+    return NextResponse.json({ ok: true, challengeId, topic, questions });
   } catch (err) {
     console.error("challenge create error", err);
     return NextResponse.json({ ok: false, error: "create failed" }, { status: 500 });

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase, supabaseConfigured } from "@/lib/supabaseServer";
-import { commonWeakTopics, commonSubjects, type TopicRef } from "@/lib/social";
+import { type TopicRef } from "@/lib/social";
 
 export const maxDuration = 30;
 
@@ -29,25 +29,5 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET ?me=&peer= → the topics both are weak at, plus shared subjects for the
-// fallback vote when there is no exact common topic.
-export async function GET(req: NextRequest) {
-  if (!supabaseConfigured()) return NextResponse.json({ configured: false, common: [], subjects: [] });
-  const url = new URL(req.url);
-  const me = (url.searchParams.get("me") || "").replace(/\D/g, "");
-  const peer = (url.searchParams.get("peer") || "").replace(/\D/g, "");
-  if (me.length !== 10 || peer.length !== 10) return NextResponse.json({ configured: true, common: [], subjects: [] });
-  try {
-    const { data } = await supabase().from("handles").select("phone, weak_topics").in("phone", [me, peer]);
-    const mine = clean((data ?? []).find((r) => r.phone === me)?.weak_topics);
-    const theirs = clean((data ?? []).find((r) => r.phone === peer)?.weak_topics);
-    return NextResponse.json({
-      configured: true,
-      common: commonWeakTopics(mine, theirs),
-      subjects: commonSubjects(mine, theirs),
-    });
-  } catch (err) {
-    console.error("weak-topics common error", err);
-    return NextResponse.json({ configured: true, common: [], subjects: [] });
-  }
-}
+// (The old GET ?me=&peer= common-topics endpoint is gone — the server now
+// picks challenge topics itself via the syllabus ladder in challengeServer.)

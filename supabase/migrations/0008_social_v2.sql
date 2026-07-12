@@ -22,3 +22,10 @@ alter table squad_invites enable row level security;
 alter table dm_messages drop constraint if exists dm_messages_kind_check;
 alter table dm_messages add constraint dm_messages_kind_check
   check (kind in ('text','challenge','result','gif','vote','sticker'));
+
+-- Challenges record their subject so the syllabus ladder can count prior
+-- battles per pair+subject and step up the difficulty.
+alter table challenges add column if not exists subject text;
+
+-- Topic voting is replaced by the syllabus ladder.
+drop table if exists challenge_votes;

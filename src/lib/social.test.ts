@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { canonicalPair, normalizeHandle, isValidHandle, genInviteCode, rankChallenge, blockState, commonWeakTopics, commonSubjects, allVoted, resolveVote } from "./social";
+import { canonicalPair, normalizeHandle, isValidHandle, genInviteCode, rankChallenge, blockState, commonWeakTopics } from "./social";
+import { pickChallengeTopic, sharedClass, difficultyTier, SYLLABUS } from "./syllabus";
 
 describe("canonicalPair", () => {
   it("orders the same regardless of argument order", () => {
@@ -64,29 +65,43 @@ describe("commonWeakTopics", () => {
   it("empty when nothing overlaps", () => {
     expect(commonWeakTopics(a, [{ topic: "Thermodynamics", subject: "Physics" }])).toEqual([]);
   });
-  it("commonSubjects finds shared subjects, drops Unknown", () => {
-    const b = [{ topic: "Mole Concept", subject: "Chemistry" }, { topic: "X", subject: "Unknown" }];
-    expect(commonSubjects([{ topic: "T", subject: "Chemistry" }, { topic: "U", subject: "Unknown" }], b)).toEqual(["Chemistry"]);
-  });
 });
 
-describe("challenge vote", () => {
-  const opts = [
-    { id: "o1", topic: "Rotational Motion", subject: "Physics" },
-    { id: "o2", topic: "Electrostatics", subject: "Physics" },
-  ];
-  it("allVoted is true only when every participant has a vote", () => {
-    expect(allVoted(["a", "b"], { a: "o1" })).toBe(false);
-    expect(allVoted(["a", "b"], { a: "o1", b: "o2" })).toBe(true);
-    expect(allVoted([], {})).toBe(false);
+describe("syllabus ladder", () => {
+  it("sharedClass takes the lower class; droppers see everything", () => {
+    expect(sharedClass("Class 12", "Class 11")).toBe("Class 11");
+    expect(sharedClass("Dropper", "Class 12")).toBe("Class 12");
+    expect(sharedClass("Dropper", "Dropper")).toBe("Dropper");
+    expect(sharedClass(null, "Class 12")).toBe("Class 12"); // unknown → treated as dropper
   });
-  it("resolveVote picks the majority option", () => {
-    expect(resolveVote(opts, { a: "o2", b: "o2" })?.id).toBe("o2");
+  it("difficulty steps up every 3 battles, capped at 3", () => {
+    expect(difficultyTier(0)).toBe(1);
+    expect(difficultyTier(3)).toBe(2);
+    expect(difficultyTier(6)).toBe(3);
+    expect(difficultyTier(30)).toBe(3);
   });
-  it("resolveVote breaks a tie to the first-listed option", () => {
-    expect(resolveVote(opts, { a: "o1", b: "o2" })?.id).toBe("o1");
+  it("prefers an unplayed common weak topic in the subject", () => {
+    const pick = pickChallengeTopic({
+      subject: "Physics", klass: "Class 11",
+      commonWeak: ["Thermodynamics"], played: [], battlesInSubject: 0,
+    });
+    expect(pick.topic).toBe("Thermodynamics");
   });
-  it("resolveVote returns null with no options", () => {
-    expect(resolveVote([], { a: "o1" })).toBeNull();
+  it("falls back to the earliest unplayed ladder topic at the tier", () => {
+    const pick = pickChallengeTopic({
+      subject: "Physics", klass: "Class 11",
+      commonWeak: [], played: ["Units and Measurement"], battlesInSubject: 0,
+    });
+    expect(pick.topic).toBe("Motion in a Straight Line");
+    expect(pick.difficulty).toBe(1);
+  });
+  it("skips played topics (case-insensitive) and respects class filter", () => {
+    const c11 = SYLLABUS.Physics.filter((t) => t.klass === "Class 11").map((t) => t.name);
+    const pick = pickChallengeTopic({
+      subject: "Physics", klass: "Class 11",
+      commonWeak: [], played: c11, battlesInSubject: c11.length,
+    });
+    // everything played → wraps to the start of the ladder, never a Class 12 topic
+    expect(c11).toContain(pick.topic);
   });
 });
