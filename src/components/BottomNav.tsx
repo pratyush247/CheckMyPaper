@@ -47,20 +47,20 @@ function useSwipeNav(path: string) {
 
 const tabs = [
   { href: "/", label: "Papers", icon: PaperIcon },
-  { href: "/ask", label: "Ask", icon: TabMicIcon },
-  null, // center Duel FAB slot
+  { href: "/battle", label: "Duel", icon: DuelIcon },
+  null, // center voice FAB slot
   { href: "/tutor", label: "Coach", icon: CoachIcon },
   { href: "/progress", label: "Progress", icon: ChartIcon },
 ] as const;
 
-// Centre FAB is Duel (/battle). When `mic` is passed (only on the Ask page),
-// it becomes the live voice recorder instead: white, breathing to invite a
-// tap, pulsing red while recording, with a floating status label.
+// When `mic` is passed (only on the Ask page), the centre FAB becomes the live
+// voice recorder: white, breathing to invite a tap, pulsing red while recording,
+// with a floating status label. Everywhere else it stays a link to /ask.
 export type MicControl = { phase: RecPhase; seconds: number; onToggle: () => void; disabled?: boolean };
 
 export function BottomNav({ mic }: { mic?: MicControl } = {}) {
   const path = usePathname();
-  const duelActive = path.startsWith("/battle");
+  const askActive = path.startsWith("/ask");
   useSwipeNav(path);
   return (
     <nav className="fixed bottom-0 left-1/2 z-30 w-full max-w-[30rem] -translate-x-1/2 border-t border-[var(--color-line)] bg-[var(--color-paper)]/95 backdrop-blur">
@@ -90,12 +90,12 @@ export function BottomNav({ mic }: { mic?: MicControl } = {}) {
                 </>
               ) : (
                 <Link
-                  href="/battle"
-                  aria-label="Duel — play online battles"
+                  href="/ask"
+                  aria-label="Ask a doubt by voice"
                   className="btn-primary -mt-5 mb-2.5 flex h-14 w-14 items-center justify-center rounded-full shadow-[var(--shadow-pop)] ring-4 ring-[var(--color-paper)] transition-transform active:scale-95"
-                  style={duelActive ? { filter: "brightness(1.05)" } : undefined}
+                  style={askActive ? { filter: "brightness(1.05)" } : undefined}
                 >
-                  <SwordsIcon />
+                  <MicIcon />
                 </Link>
               )}
             </div>
@@ -147,19 +147,10 @@ function PaperIcon({ active }: { active: boolean }) {
     </svg>
   );
 }
-function SwordsIcon() {
+function DuelIcon({ active }: { active: boolean }) {
   return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-      <path d="M4 4l9 9M20 4l-9 9M4 20l4-4M20 20l-4-4M6.5 17.5l-2 2M17.5 17.5l2 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M13 13l3 3M11 13l-3 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
-}
-function TabMicIcon({ active }: { active: boolean }) {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <rect x="9" y="3" width="6" height="11" rx="3" stroke="currentColor" strokeWidth="1.8" fill={active ? "var(--color-violet-soft)" : "none"} />
-      <path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5v3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    <svg width="24" height="24" viewBox="0 0 24 24" fill={active ? "var(--color-violet-soft)" : "none"}>
+      <path d="M5 4l8.5 8.5M19 4l-8.5 8.5M5 20l3.5-3.5M19 20l-3.5-3.5M7 18l-2 2M17 18l2 2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
     </svg>
   );
 }

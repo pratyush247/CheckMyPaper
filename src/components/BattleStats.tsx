@@ -17,7 +17,7 @@ export function SquadLeaderboard({ code, me }: { code: string; me: string }) {
   return (
     <div className="card p-4">
       <h2 className="text-sm font-bold">Squad leaderboard 🏆</h2>
-      <p className="mt-0.5 text-xs text-[var(--color-ink-soft)]">Ranked by battle performance (accuracy · speed · concepts)</p>
+      <p className="mt-0.5 text-xs text-[var(--color-ink-soft)]">Ranked by duel performance (accuracy · speed · concepts)</p>
       <ul className="mt-2 flex flex-col gap-1.5">
         {rows.map((r, i) => (
           <li
@@ -28,7 +28,7 @@ export function SquadLeaderboard({ code, me }: { code: string; me: string }) {
               {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`} {r.phone === me ? "You" : r.handle ? `@${r.handle}` : `…${r.phone.slice(-4)}`}
             </span>
             <span className="text-xs tabular-nums text-[var(--color-ink-soft)]">
-              {r.avgPerf} perf · {r.battles} battle{r.battles === 1 ? "" : "s"} · {r.rating}
+              {r.avgPerf} perf · {r.battles} duel{r.battles === 1 ? "" : "s"} · {r.rating}
             </span>
           </li>
         ))}
@@ -49,7 +49,7 @@ export function MyBattleStats({ phone }: { phone: string }) {
   const winRate = Math.round((s.wins / s.battles) * 100);
   return (
     <div className="mt-4">
-      <h2 className="mb-2 text-sm font-extrabold uppercase tracking-wide text-[var(--color-ink-soft)]">Your battles ⚔️</h2>
+      <h2 className="mb-2 text-sm font-extrabold uppercase tracking-wide text-[var(--color-ink-soft)]">Your duels ⚔️</h2>
       <div className="grid grid-cols-2 gap-2.5">
         <div className="card p-4 text-center">
           <p className="text-2xl font-extrabold text-[var(--color-violet)]">{s.rating}</p>
@@ -57,7 +57,7 @@ export function MyBattleStats({ phone }: { phone: string }) {
         </div>
         <div className="card p-4 text-center">
           <p className="text-2xl font-extrabold text-[var(--color-violet)]">{s.battles}</p>
-          <p className="text-xs font-semibold text-[var(--color-ink-soft)]">battles · {winRate}% wins</p>
+          <p className="text-xs font-semibold text-[var(--color-ink-soft)]">duels · {winRate}% wins</p>
         </div>
         <div className="card p-4 text-center">
           <p className="text-2xl font-extrabold text-[var(--color-violet)]">{s.avgPerf}</p>

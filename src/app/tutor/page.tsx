@@ -72,7 +72,8 @@ export default function TutorPage() {
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const rec = useRecorder((text) => setInput((p) => (p ? p + " " : "") + text));
+  // Voice → transcript → sent straight to the coach, who answers in text.
+  const rec = useRecorder((text) => send(text));
 
   // Sync the student's mistakes into the RAG store in the background — the
   // chat is usable immediately, the memory just gets richer once sync lands.

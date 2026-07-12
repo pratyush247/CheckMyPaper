@@ -68,7 +68,7 @@ export default function Home() {
         {/* Feature grid */}
         <div className="stagger grid grid-cols-2 gap-3">
           <Tile color="yellow" emoji="📄" label="Scan" value="Add paper" caption="Snap a mock & diagnose it" href="/papers/new" />
-          <Tile color="lime" emoji="⚔️" label="Play" value="Battle" caption="Beat your weak topics" href="/battle" />
+          <Tile color="lime" emoji="⚔️" label="Play" value="Duel" caption="Beat your weak topics" href="/battle" />
           <Tile color="purple" emoji="🧠" label="Ask" value="Coach" caption="Chat with your mistakes" href="/tutor" />
           <Tile color="sky" emoji="📊" label="Stats" value="Progress" caption="See your patterns grow" href="/progress" />
         </div>
@@ -80,10 +80,10 @@ export default function Home() {
           <Link href={`/battle/review/${pendingReviews[0].id}`} className="mt-3 block">
             <div className="tile tile-purple">
               <div className="flex items-center gap-2 text-[0.7rem] font-extrabold uppercase tracking-wider opacity-80">
-                ⚔️ Battle review pending
+                ⚔️ Duel review pending
               </div>
               <p className="mt-1.5 text-[0.98rem] font-bold leading-snug">
-                {pendingReviews[0].items.length} mistake{pendingReviews[0].items.length === 1 ? "" : "s"} from {pendingReviews[0].topic} — tag them in ~2 min so your coach learns from this battle →
+                {pendingReviews[0].items.length} mistake{pendingReviews[0].items.length === 1 ? "" : "s"} from {pendingReviews[0].topic} — tag them in ~2 min so your coach learns from this duel →
               </p>
             </div>
           </Link>

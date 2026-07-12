@@ -129,7 +129,7 @@ export default function ThreadPage() {
 
       <div className="flex-1 overflow-y-auto px-4 pt-2">
         {messages.length === 0 && (
-          <p className="mt-8 text-center text-xs text-[var(--color-ink-soft)]">Say hi 👋 or ⚔️ challenge @{handle} to a battle.</p>
+          <p className="mt-8 text-center text-xs text-[var(--color-ink-soft)]">Say hi 👋 or ⚔️ challenge @{handle} to a duel.</p>
         )}
         {messages.map((m) => <ChatBubble key={m.id} m={m} mine={m.sender === phone} />)}
       </div>
