@@ -19,8 +19,10 @@ export default function FriendsPage() {
   const [ready, setReady] = useState(false);
   const [configured, setConfigured] = useState(true);
   const [handle, setHandle] = useState<string | null>(null);
-  const [bio, setBio] = useState("");
+  const [bio, setBio] = useState(""); // draft value in the input
+  const [savedBio, setSavedBio] = useState(""); // persisted value, shown as a subheading
   const [bioSaved, setBioSaved] = useState(false);
+  const [editingBio, setEditingBio] = useState(false);
   const [claim, setClaim] = useState("");
   const [friends, setFriends] = useState<FriendInfo[]>([]);
   const [incoming, setIncoming] = useState<PendingReq[]>([]);
@@ -33,6 +35,7 @@ export default function FriendsPage() {
       const me = await getMe(phone);
       setConfigured(me.configured);
       setHandle(me.handle);
+      setSavedBio(me.bio || "");
       setBio((prev) => prev || me.bio || "");
       if (me.configured) {
         const f = await getFriends(phone);
@@ -62,8 +65,11 @@ export default function FriendsPage() {
     else setMsg(r.error || "Couldn't change username");
   }
   async function doBio() {
-    await saveBio(phone, bio.trim());
+    const trimmed = bio.trim();
+    await saveBio(phone, trimmed);
+    setSavedBio(trimmed);
     setBioSaved(true);
+    setEditingBio(false);
     setTimeout(() => setBioSaved(false), 1500);
   }
   async function doClaim() {
@@ -140,6 +146,9 @@ export default function FriendsPage() {
                 </button>
               </div>
               <p className="mt-1 text-xl font-extrabold">@{handle}</p>
+              {savedBio && !editingBio ? (
+                <p className="mt-0.5 text-sm font-semibold opacity-80">{savedBio}</p>
+              ) : null}
               {editingHandle && (
                 <div className="mt-2 flex gap-2">
                   <input
@@ -151,16 +160,21 @@ export default function FriendsPage() {
                   <button onClick={doChangeHandle} disabled={!newHandle.trim()} className="btn btn-primary shrink-0 !px-3 !py-1.5 text-xs">Save</button>
                 </div>
               )}
-              <div className="mt-2 flex gap-2">
-                <input
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value.slice(0, 120))}
-                  onKeyDown={(e) => e.key === "Enter" && doBio()}
-                  placeholder="Flaunt a bio — shown with your friend requests"
-                  className="min-w-0 flex-1 rounded-xl border border-[var(--color-line)] bg-white px-3 py-1.5 text-xs text-[#17181c] outline-none focus:border-[var(--color-violet)]"
-                />
-                <button onClick={doBio} className="btn btn-primary shrink-0 !px-3 !py-1.5 text-xs">{bioSaved ? "Saved ✓" : "Save"}</button>
-              </div>
+              {savedBio && !editingBio ? (
+                <button onClick={() => setEditingBio(true)} className="mt-2 text-xs font-bold underline underline-offset-2">Edit bio</button>
+              ) : (
+                <div className="mt-2 flex gap-2">
+                  <input
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value.slice(0, 15))}
+                    onKeyDown={(e) => e.key === "Enter" && doBio()}
+                    placeholder="Bio (max 15 chars)"
+                    maxLength={15}
+                    className="min-w-0 flex-1 rounded-xl border border-[var(--color-line)] bg-white px-3 py-1.5 text-xs text-[#17181c] outline-none focus:border-[var(--color-violet)]"
+                  />
+                  <button onClick={doBio} className="btn btn-primary shrink-0 !px-3 !py-1.5 text-xs">{bioSaved ? "Saved ✓" : "Save"}</button>
+                </div>
+              )}
             </div>
 
             <GroupSection phone={phone} name={name} friends={friends} />

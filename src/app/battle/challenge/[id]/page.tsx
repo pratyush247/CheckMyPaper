@@ -196,11 +196,24 @@ export default function ChallengePlayPage() {
 
           <FriendPopup me={phone} name={account?.name ?? ""} phones={participants} />
 
-          {!getBattleReview(id)?.done && (
-            <button onClick={() => router.push(`/battle/review/${id}`)} className="btn btn-primary mt-5 w-full">
-              Review your mistakes → <span className="font-normal opacity-80">(~2 min)</span>
-            </button>
-          )}
+          {(() => {
+            const rv = getBattleReview(id);
+            if (!rv || rv.items.length === 0) return null;
+            if (!rv.done) {
+              return (
+                <button onClick={() => router.push(`/battle/review/${id}`)} className="btn btn-primary mt-5 w-full">
+                  Review your mistakes → <span className="font-normal opacity-80">(~2 min)</span>
+                </button>
+              );
+            }
+            const editsLeft = 2 - (rv.editCount ?? 0);
+            if (editsLeft <= 0) return null;
+            return (
+              <button onClick={() => router.push(`/battle/review/${id}`)} className="btn btn-line mt-5 w-full">
+                Edit review <span className="font-normal opacity-80">({editsLeft} edit{editsLeft === 1 ? "" : "s"} left)</span>
+              </button>
+            );
+          })()}
           <button onClick={() => router.push("/")} className={`btn mt-3 w-full ${getBattleReview(id)?.done ? "btn-primary" : "btn-line"}`}>Home →</button>
         </div>
       </main>

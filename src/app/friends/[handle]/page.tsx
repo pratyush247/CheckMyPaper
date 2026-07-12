@@ -94,6 +94,11 @@ export default function ThreadPage() {
     await respond(phone, friend.id, "block");
     router.back();
   }
+  async function unfriend() {
+    if (!friend) return;
+    await respond(phone, friend.id, "decline"); // any non-accept/block action deletes the friendship row
+    router.replace("/friends");
+  }
   async function doReport() {
     if (!peer) return;
     await report(phone, peer, { reason: "reported from chat" });
@@ -120,6 +125,7 @@ export default function ThreadPage() {
             {showMenu && (
               <div className="absolute right-0 top-9 z-30 w-36 overflow-hidden rounded-xl border border-[var(--color-line)] bg-[var(--color-card)] shadow-[var(--shadow-card)]">
                 <button onClick={doReport} className="block w-full px-4 py-2.5 text-left text-sm">Report</button>
+                <button onClick={unfriend} className="block w-full px-4 py-2.5 text-left text-sm text-[var(--color-bad)]">Unfriend</button>
                 <button onClick={block} className="block w-full px-4 py-2.5 text-left text-sm text-[var(--color-bad)]">Block</button>
               </div>
             )}

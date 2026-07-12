@@ -51,9 +51,9 @@ export function PlayOnline() {
     if (event === "matched") goMatch((payload as { challengeId: string }).challengeId);
   });
 
-  // While searching: tick the wait clock and re-poke the matcher every 10s
-  // (that's what widens the rating window server-side). After 40s alone,
-  // summon a practice rival so the student still gets a game.
+  // While searching: tick the wait clock and re-poke the matcher every 5s
+  // (that's what widens the rating window server-side). After 5s alone,
+  // summon a practice rival so the student gets a game within ~10s total.
   useEffect(() => {
     if (!searching) return;
     const t = setInterval(async () => {
@@ -64,11 +64,11 @@ export function PlayOnline() {
       if (matchedRef.current) return;
       if (r?.matched && r.challengeId) return goMatch(r.challengeId);
       if (r?.waiting) setWaiting(r.waiting);
-      if (waited >= 40 && (r?.waiting ?? 1) < 2) {
+      if (waited >= 5 && (r?.waiting ?? 1) < 2) {
         const rb = await call("bot").catch(() => null);
         if (rb?.matched && rb.challengeId) goMatch(rb.challengeId, rb.bot);
       }
-    }, 10_000);
+    }, 5_000);
     return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searching]);

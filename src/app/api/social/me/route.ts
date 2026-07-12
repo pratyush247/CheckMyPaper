@@ -28,13 +28,13 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST { phone, bio } → update my flauntable bio (≤120 chars)
+// POST { phone, bio } → update my flauntable bio (≤15 chars)
 export async function POST(req: NextRequest) {
   if (!supabaseConfigured()) return NextResponse.json({ ok: false, configured: false });
   try {
     const b = await req.json();
     const phone = String(b.phone || "").replace(/\D/g, "");
-    const bio = String(b.bio ?? "").trim().slice(0, 120);
+    const bio = String(b.bio ?? "").trim().slice(0, 15);
     if (phone.length !== 10) return NextResponse.json({ ok: false, error: "bad input" }, { status: 400 });
     await supabase().from("handles").update({ bio: bio || null }).eq("phone", phone);
     return NextResponse.json({ ok: true, bio: bio || null });
