@@ -7,6 +7,27 @@ project: CheckMyPaper
 
 Append-only. Newest first.
 
+## 2026-07-13 — v4.3: field-test fixes round 2
+
+- PlayOnline: bot fallback now joins within ~10s (poll every 5s, summon at
+  waited>=5s) instead of the previous 40s+ wait.
+- Friends page: bio capped to 15 chars server-side (`/api/social/me`) and
+  client-side; renders as a subheading under `@handle` once saved, gated on
+  a separate `savedBio` state (the earlier draft-based gate made the input
+  vanish mid-keystroke on first save — fixed by splitting draft vs. saved).
+- Friends chat (`friends/[handle]`): added "Unfriend" to the ⋯ menu,
+  distinct from Block — reuses `respond(... , "decline")` since any
+  non-accept/block action deletes the friendship row server-side.
+- Duel review (`battle/review/[id]`, `lib/store.ts`): fixed the bug where
+  tagging post-duel mistakes created a paper record but never generated its
+  insight report, forcing the student to redo the review from the homepage.
+  `completeBattleReview` now returns the paperId; the review page calls
+  `/api/insight` itself (mirroring `papers/[id]/narrate`) and writes
+  `setPaperInsight` in the same flow, then routes straight to
+  `/papers/{id}/insight`. A completed review can now be re-tagged up to 2
+  times (`editCount` on `BattleReview`), reusing the same paperId so edits
+  regenerate the insight in place instead of duplicating papers.
+
 ## 2026-06-29
 - Scaffolded `llm-wiki/` (index.md + log.md) from `_setup/global_okf_scaffold.md` and cataloged the current architecture.
 - **Skipped scaffold steps 1–2** (generate `AGENTS.md` with `<!-- SYSTEM_LOCK -->` barriers, `CLAUDE.md` pointer): the scaffold targets a *new empty folder*, but this repo already has meaningful `AGENTS.md`/`CLAUDE.md`. Overwriting them would be destructive and off-spec — left untouched pending explicit confirmation.
