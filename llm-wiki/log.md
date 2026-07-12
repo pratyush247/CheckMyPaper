@@ -64,3 +64,9 @@ Append-only. Newest first.
   pulse), replies render as full-width cards, mic button (useRecorder →
   transcript into input), persona prompt asks 1-2 follow-ups before answering
   and checks in until clear.
+- v4.2 correction (same day): mic FAB restored to centre (Ask); Duel is the
+  second tab (crossed-swords icon); Duel title top-centred on /battle; all
+  visible "battle" wording → "duel" (routes/tables unchanged); coach mic now
+  auto-sends the transcript (AI answers in text); Friends page restyled to the
+  home card language (purple identity tile, uppercase section headers,
+  friend rows as cards).
