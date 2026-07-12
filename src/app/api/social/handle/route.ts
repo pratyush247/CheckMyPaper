@@ -42,7 +42,16 @@ export async function POST(req: NextRequest) {
     await upsertStudent(phone, name);
 
     const existing = await supabase().from("handles").select("handle, invite_code").eq("phone", phone).maybeSingle();
-    if (existing.data) return NextResponse.json({ ok: true, handle: existing.data.handle, inviteCode: existing.data.invite_code, already: true });
+    if (existing.data) {
+      // Changing an existing username: allowed when the new one is free.
+      if (b.change && existing.data.handle !== handle) {
+        const { error } = await supabase().from("handles").update({ handle }).eq("phone", phone);
+        if (error?.code === "23505") return NextResponse.json({ ok: false, error: "That handle is taken" }, { status: 409 });
+        if (error) return NextResponse.json({ ok: false, error: error.message || "Could not change, try again" }, { status: 500 });
+        return NextResponse.json({ ok: true, handle, inviteCode: existing.data.invite_code, changed: true });
+      }
+      return NextResponse.json({ ok: true, handle: existing.data.handle, inviteCode: existing.data.invite_code, already: true });
+    }
 
     for (let i = 0; i < 5; i++) {
       const invite_code = genInviteCode();

@@ -31,8 +31,8 @@ export const saveBio = (phone: string, bio: string) =>
   post("/api/social/me", { phone, bio }) as Promise<{ ok: boolean; bio: string | null }>;
 export const getPeers = (me: string, phones: string[]) =>
   get(`/api/social/peers?me=${me}&phones=${phones.join(",")}`) as Promise<{ peers: PeerInfo[] }>;
-export const claimHandle = (phone: string, name: string, handle: string) =>
-  post("/api/social/handle", { phone, name, handle }) as Promise<{ ok: boolean; handle?: string; inviteCode?: string; error?: string }>;
+export const claimHandle = (phone: string, name: string, handle: string, change = false) =>
+  post("/api/social/handle", { phone, name, handle, change }) as Promise<{ ok: boolean; handle?: string; inviteCode?: string; error?: string }>;
 export const searchHandles = (q: string, me: string) =>
   get(`/api/social/handle?q=${encodeURIComponent(q)}&me=${me}`) as Promise<{ results: { handle: string; phone: string; name: string }[] }>;
 

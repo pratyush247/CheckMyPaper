@@ -20,7 +20,7 @@ export default function BattlePage() {
 
   return (
     <main className="pb-28">
-      <TopBar title="Battle Mode ⚔️" />
+      <TopBar title="Duel ⚔️" />
 
       <div className="mb-4 flex flex-col gap-4 px-4">
         <PlayOnline />

@@ -71,7 +71,11 @@ async function tryMatch(me: QueueRow, force: boolean): Promise<string | null> {
   return challengeId;
 }
 
-// POST { action: "join"|"leave"|"force", phone, name?, klass?, subject?, topic?, size? }
+// Practice rivals for when nobody's online: real-looking student usernames.
+// They only exist client-side (simulated), never touch leaderboards or friends.
+const BOT_NAMES = ["aarav", "ananya", "ishaan", "diya", "vihaan", "sneha", "arjun", "priya", "kabir", "meera", "rohan", "anika"];
+
+// POST { action: "join"|"leave"|"force"|"bot", phone, name?, klass?, subject?, topic?, size? }
 export async function POST(req: NextRequest) {
   if (!supabaseConfigured()) return NextResponse.json({ ok: false, configured: false });
   try {
@@ -84,7 +88,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
-    if (b.action === "join" || b.action === "force") {
+    if (b.action === "join" || b.action === "force" || b.action === "bot") {
       const subject = String(b.subject || "");
       const klass = String(b.klass || "Dropper");
       const size = [2, 4, 6, 8].includes(Number(b.size)) ? Number(b.size) : 2;
@@ -94,6 +98,44 @@ export async function POST(req: NextRequest) {
 
       const { data: s } = await supabase().from("students").select("rating").eq("phone", phone).maybeSingle();
       const rating = (s?.rating as number) ?? 1000;
+
+      if (b.action === "bot") {
+        await supabase().from("match_queue").delete().eq("phone", phone);
+        const pick = pickOnlineTopic(subject as CoreSubject, klass, topic, rating);
+        const { challengeId } = await createChallengeRecord({
+          creatorPhone: phone, topic: pick.topic, subject, participants: [phone],
+          difficulty: pick.difficulty, postCard: false,
+        });
+        // Closed immediately so the live-lobby rejoin check below never resurfaces it.
+        await supabase().from("challenges").update({ status: "closed" }).eq("id", challengeId);
+        const bot = `${BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)]}_${Math.floor(Math.random() * 90) + 10}`;
+        return NextResponse.json({ ok: true, matched: true, challengeId, bot });
+      }
+
+      // Already in a live lobby (e.g. a stale poll landed after being matched)?
+      // Send them back there instead of re-queueing — this is what caused one
+      // player's quiz to reset into a different question set.
+      const { data: live } = await supabase()
+        .from("challenges")
+        .select("id")
+        .eq("status", "open")
+        .contains("participant_phones", [phone])
+        .is("thread_id", null)
+        .is("group_code", null)
+        .gte("created_at", new Date(Date.now() - 30 * 60e3).toISOString())
+        .limit(3);
+      if (live && live.length > 0) {
+        // …unless they already played it (opponent still finishing) — then queue normally.
+        const { data: played } = await supabase()
+          .from("challenge_scores").select("challenge_id")
+          .eq("phone", phone).in("challenge_id", live.map((l) => l.id));
+        const unplayed = live.find((l) => !(played ?? []).some((p) => p.challenge_id === l.id));
+        if (unplayed) {
+          await supabase().from("match_queue").delete().eq("phone", phone);
+          return NextResponse.json({ ok: true, matched: true, challengeId: unplayed.id });
+        }
+      }
+
       const row: QueueRow = { phone, klass, subject, topic, size, rating, enqueued_at: new Date().toISOString() };
       if (b.action === "join") {
         await supabase().from("match_queue").upsert({ phone, klass, subject, topic, size, rating }, { onConflict: "phone" });

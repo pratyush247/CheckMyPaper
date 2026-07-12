@@ -31,6 +31,12 @@ export default function ChallengePlayPage() {
   const startRef = useRef(0);
   const [now, setNow] = useState(0);
 
+  // Practice-rival mode: ?bot=<name> means the "opponent" is simulated locally
+  // — plays a believable game but always loses by a whisker. Never hits the
+  // server, so no leaderboard rows and no friend popup.
+  const bot = useMemo(() => (typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("bot") ?? ""), []);
+  const [opp, setOpp] = useState<{ name: string; score: number; answered: number; timeMs: number } | null>(null);
+
   // load the frozen challenge — state is PER VIEWER: if I already have a score,
   // show results (re-opening a finished challenge never replays it); if I
   // haven't played, I can play even when everyone else already finished.
@@ -58,12 +64,35 @@ export default function ChallengePlayPage() {
     })();
   }, [mounted, id, phone]);
 
-  // On the result screen, standings update the moment anyone else finishes.
-  useRealtime(phase === "result" ? `battle:${id}` : null, (event, payload) => {
+  // Live during the quiz (rival progress box) and on the result screen
+  // (standings update the moment anyone else finishes).
+  useRealtime(!bot && (phase === "quiz" || phase === "result") ? `battle:${id}` : null, (event, payload) => {
     if (event === "score") setRanked((payload as { ranked: RankedScore[] }).ranked);
+    if (event === "progress") {
+      const p = payload as { phone: string; score: number; answered: number; timeMs: number };
+      if (p.phone !== phone) setOpp({ name: `rival …${p.phone.slice(-4)}`, score: p.score, answered: p.answered, timeMs: p.timeMs });
+    }
   });
+
+  // Simulated rival: answers a question every ~12–27s, decent but beatable.
+  // The final margin is settled in finish() — always a close loss.
+  useEffect(() => {
+    if (phase !== "quiz" || !bot || quiz.length === 0) return;
+    let answered = 0, score = 0;
+    let nextAt = 12_000 + Math.random() * 15_000;
+    const t = setInterval(() => {
+      const el = Date.now() - startRef.current;
+      if (answered < quiz.length && el >= nextAt) {
+        answered++;
+        if (Math.random() < 0.65 && score < quiz.length - 2) score++;
+        nextAt += 12_000 + Math.random() * 15_000;
+      }
+      setOpp({ name: bot, score, answered, timeMs: el });
+    }, 1000);
+    return () => clearInterval(t);
+  }, [phase, bot, quiz.length]);
   useFocusRefetch(async () => {
-    if (phase !== "result") return;
+    if (phase !== "result" || bot) return;
     const c = await getChallenge(id).catch(() => null);
     if (c?.scores) setRanked(c.scores);
   });
@@ -76,8 +105,20 @@ export default function ChallengePlayPage() {
   }, [phase]);
 
   const choose = useCallback((option: number) => {
-    setAnswers((a) => { const n = [...a]; n[idx] = option; return n; });
-  }, [idx]);
+    const n = [...answers];
+    n[idx] = option;
+    setAnswers(n);
+    // Tell real opponents where I am (feeds their rival box). Fire-and-forget.
+    if (!bot && participants.length > 1) {
+      const answered = n.filter((x) => x >= 0).length;
+      const score = quiz.reduce((s, q, i) => s + (n[i] === q.answer ? 1 : 0), 0);
+      fetch("/api/social/challenge/progress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ challengeId: id, phone, answered, score, timeMs: Date.now() - startRef.current }),
+      }).catch(() => {});
+    }
+  }, [idx, answers, bot, participants.length, quiz, id, phone]);
 
   async function finish() {
     const score = quiz.reduce((s, q, i) => s + (answers[i] === q.answer ? 1 : 0), 0);
@@ -91,6 +132,16 @@ export default function ChallengePlayPage() {
         .filter((it) => it.myPick !== it.answer),
     });
     setPhase("result");
+    if (bot) {
+      // Practice rival always loses by a close margin — nothing goes to the server.
+      const botScore = Math.max(0, score - 1);
+      const botTime = timeMs + 8_000 + Math.floor(Math.random() * 12_000);
+      setRanked([
+        { phone, score, timeMs, rank: 1, winner: true },
+        { phone: "bot", score: botScore, timeMs: botTime, rank: 2, winner: false },
+      ]);
+      return;
+    }
     const r = await submitChallengeScore(id, phone, score, timeMs);
     if (r.ok) setRanked(r.ranked);
   }
@@ -135,7 +186,7 @@ export default function ChallengePlayPage() {
               <ul className="flex flex-col gap-2">
                 {ranked.map((r) => (
                   <li key={r.phone} className={`card flex items-center justify-between p-3 ${r.phone === phone ? "border-[var(--color-violet)]" : ""}`}>
-                    <span className="text-sm font-semibold">{r.rank}. {r.phone === phone ? "You" : `…${r.phone.slice(-4)}`} {r.winner ? "🏆" : ""}</span>
+                    <span className="text-sm font-semibold">{r.rank}. {r.phone === phone ? "You" : r.phone === "bot" ? `@${bot}` : `…${r.phone.slice(-4)}`} {r.winner ? "🏆" : ""}</span>
                     <span className="text-sm tabular-nums text-[var(--color-ink-soft)]">{r.score}/10 · {fmtTime(r.timeMs)}</span>
                   </li>
                 ))}
@@ -163,6 +214,14 @@ export default function ChallengePlayPage() {
   return (
     <main className="pb-28">
       <TopBar title={topic} right={<span className="text-sm font-bold tabular-nums">⏱ {fmtTime(elapsed)}</span>} />
+      {opp && (
+        <div className="fixed right-3 top-16 z-30 rounded-xl border border-[var(--color-line)] bg-[var(--color-card)]/95 px-3 py-1.5 text-right shadow-[var(--shadow-pop)] backdrop-blur">
+          <p className="text-[11px] font-bold leading-tight">@{opp.name}</p>
+          <p className="text-[11px] tabular-nums leading-tight text-[var(--color-ink-soft)]">
+            {opp.score} ✓ · {opp.answered}/{quiz.length} · {fmtTime(opp.timeMs)}
+          </p>
+        </div>
+      )}
       <div className="px-4">
         <div className="mb-1 flex justify-between text-xs font-semibold text-[var(--color-ink-soft)]">
           <span>Question {idx + 1} of {quiz.length}</span>

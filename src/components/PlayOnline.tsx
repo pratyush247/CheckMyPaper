@@ -27,30 +27,47 @@ export function PlayOnline() {
   const [msg, setMsg] = useState("");
   const searchingRef = useRef(false);
   searchingRef.current = searching;
+  const matchedRef = useRef(false); // once matched, ignore every later signal
+  const queuedAt = useRef(0);
 
   const call = (action: string) =>
     fetch("/api/battle/match", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action, phone, name, klass, subject, topic: topic.trim() || undefined, size }),
-    }).then((r) => r.json()) as Promise<{ ok: boolean; matched?: boolean; challengeId?: string; waiting?: number; error?: string }>;
+    }).then((r) => r.json()) as Promise<{ ok: boolean; matched?: boolean; challengeId?: string; bot?: string; waiting?: number; error?: string }>;
+
+  // Single entry point into a match: navigate exactly once, leave the queue so
+  // a stale poll can't re-enqueue us into a second lobby mid-game.
+  const goMatch = (challengeId: string, bot?: string) => {
+    if (matchedRef.current) return;
+    matchedRef.current = true;
+    setSearching(false);
+    call("leave").catch(() => {});
+    router.push(`/battle/challenge/${challengeId}${bot ? `?bot=${encodeURIComponent(bot)}` : ""}`);
+  };
 
   useRealtime(searching && phone ? `user:${phone}` : null, (event, payload) => {
-    if (event === "matched") {
-      const p = payload as { challengeId: string };
-      router.push(`/battle/challenge/${p.challengeId}`);
-    }
+    if (event === "matched") goMatch((payload as { challengeId: string }).challengeId);
   });
 
   // While searching: tick the wait clock and re-poke the matcher every 10s
-  // (that's what widens the rating window server-side).
+  // (that's what widens the rating window server-side). After 40s alone,
+  // summon a practice rival so the student still gets a game.
   useEffect(() => {
     if (!searching) return;
     const t = setInterval(async () => {
-      setWaitedSec((s) => s + 10);
+      if (matchedRef.current) return;
+      const waited = Math.round((Date.now() - queuedAt.current) / 1000);
+      setWaitedSec(waited);
       const r = await call("join").catch(() => null);
-      if (r?.matched && r.challengeId) router.push(`/battle/challenge/${r.challengeId}`);
-      else if (r?.waiting) setWaiting(r.waiting);
+      if (matchedRef.current) return;
+      if (r?.matched && r.challengeId) return goMatch(r.challengeId);
+      if (r?.waiting) setWaiting(r.waiting);
+      if (waited >= 40 && (r?.waiting ?? 1) < 2) {
+        const rb = await call("bot").catch(() => null);
+        if (rb?.matched && rb.challengeId) goMatch(rb.challengeId, rb.bot);
+      }
     }, 10_000);
     return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -62,15 +79,17 @@ export function PlayOnline() {
   async function start() {
     setMsg("");
     setWaitedSec(0);
+    matchedRef.current = false;
+    queuedAt.current = Date.now();
     const r = await call("join");
     if (!r.ok) return setMsg(r.error || "Couldn't join the queue");
-    if (r.matched && r.challengeId) return router.push(`/battle/challenge/${r.challengeId}`);
+    if (r.matched && r.challengeId) return goMatch(r.challengeId);
     setWaiting(r.waiting ?? 1);
     setSearching(true);
   }
   async function startAnyway() {
     const r = await call("force");
-    if (r.matched && r.challengeId) router.push(`/battle/challenge/${r.challengeId}`);
+    if (r.matched && r.challengeId) goMatch(r.challengeId);
     else setMsg("Not enough players yet — hang on.");
   }
   async function cancel() {

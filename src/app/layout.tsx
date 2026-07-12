@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { RegisterSW } from "@/components/RegisterSW";
 import { AuthGate } from "@/components/AuthGate";
+import { PullToRefresh } from "@/components/PullToRefresh";
 import { themeBootstrapScript } from "@/lib/theme";
 
 export const metadata: Metadata = {
@@ -41,7 +42,10 @@ export default function RootLayout({
         {/* Apply saved/system theme before paint to avoid a flash. */}
         <script dangerouslySetInnerHTML={{ __html: themeBootstrapScript }} />
         <div className="app-shell">
-          <AuthGate>{children}</AuthGate>
+          {/* Global pull-to-refresh: drag down at the top of any page reloads it. */}
+          <PullToRefresh>
+            <AuthGate>{children}</AuthGate>
+          </PullToRefresh>
         </div>
         <RegisterSW />
       </body>

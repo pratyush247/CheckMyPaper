@@ -2,12 +2,11 @@
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import Link from "next/link";
-import { TopBar, AppLoading } from "@/components/ui";
+import { TopBar, AppLoading, HomeButton } from "@/components/ui";
 import { getAccount } from "@/lib/store";
 import { useStoreVersion, useMounted } from "@/lib/useStore";
 import { getMe, claimHandle, searchHandles, connect, respond, getFriends, saveBio, type FriendInfo, type PendingReq } from "@/lib/socialClient";
 import { GroupSection } from "@/components/GroupSection";
-import { PullToRefresh } from "@/components/PullToRefresh";
 import { useRealtime } from "@/lib/realtimeClient";
 
 export default function FriendsPage() {
@@ -55,6 +54,13 @@ export default function FriendsPage() {
   // Incoming friend requests / acceptances appear without a reload.
   useRealtime(phone ? `user:${phone}` : null, () => refresh());
 
+  const [editingHandle, setEditingHandle] = useState(false);
+  const [newHandle, setNewHandle] = useState("");
+  async function doChangeHandle() {
+    const r = await claimHandle(phone, name, newHandle, true);
+    if (r.ok) { setEditingHandle(false); setNewHandle(""); setMsg("Username updated ✓"); refresh(); }
+    else setMsg(r.error || "Couldn't change username");
+  }
   async function doBio() {
     await saveBio(phone, bio.trim());
     setBioSaved(true);
@@ -82,7 +88,7 @@ export default function FriendsPage() {
   if (!phone) {
     return (
       <main className="pb-28">
-        <TopBar title="Friends 👋" back />
+        <TopBar title="Friends 👋" back right={<HomeButton />} />
         <div className="px-4 pt-2">
           <div className="card p-4">
             <p className="text-sm text-[var(--color-ink-soft)]">Log in first to connect with friends.</p>
@@ -96,7 +102,7 @@ export default function FriendsPage() {
   if (!configured) {
     return (
       <main className="pb-28">
-        <TopBar title="Friends 👋" back />
+        <TopBar title="Friends 👋" back right={<HomeButton />} />
         <div className="px-4 pt-2">
           <div className="card p-4">
             <h2 className="text-sm font-bold">Friends 👥</h2>
@@ -111,8 +117,7 @@ export default function FriendsPage() {
 
   return (
     <main className="pb-28">
-      <TopBar title="Friends 👋" back />
-      <PullToRefresh onRefresh={refresh}>
+      <TopBar title="Friends 👋" back right={<HomeButton />} />
       <div className="flex flex-col gap-4 px-4 pt-1">
         {!handle ? (
           <div className="card animate-fade-up p-4">
@@ -128,7 +133,23 @@ export default function FriendsPage() {
           <>
             <div className="card animate-fade-up p-4">
               <p className="text-xs text-[var(--color-ink-soft)]">You are</p>
-              <p className="text-lg font-bold">@{handle}</p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-lg font-bold">@{handle}</p>
+                <button onClick={() => { setEditingHandle((v) => !v); setMsg(""); }} className="btn btn-ghost !px-3 !py-1 text-xs">
+                  {editingHandle ? "Cancel" : "Change"}
+                </button>
+              </div>
+              {editingHandle && (
+                <div className="mt-2 flex gap-2">
+                  <input
+                    value={newHandle}
+                    onChange={(e) => setNewHandle(e.target.value)}
+                    placeholder="@newhandle"
+                    className="min-w-0 flex-1 rounded-xl border border-[var(--color-line)] bg-[var(--color-card)] px-3 py-1.5 text-xs outline-none focus:border-[var(--color-violet)]"
+                  />
+                  <button onClick={doChangeHandle} disabled={!newHandle.trim()} className="btn btn-primary shrink-0 !px-3 !py-1.5 text-xs">Save</button>
+                </div>
+              )}
               <div className="mt-2 flex gap-2">
                 <input
                   value={bio}
@@ -193,7 +214,6 @@ export default function FriendsPage() {
           </>
         )}
       </div>
-      </PullToRefresh>
     </main>
   );
 }

@@ -102,3 +102,20 @@ Redeploy: `vercel --prod` (CLI at `~/.hermes/node/bin/vercel`). Auto-deploy on p
 - **Migrations:** 0008 (bio, squad_invites, sticker kind, challenges.subject,
   drop challenge_votes), 0009 (rating + battle_results), 0010 (match_queue).
 - **Env (new, browser-safe):** NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY.
+
+## v4.2 delta (2026-07-12)
+- **Nav:** centre FAB = Duel (/battle); "Ask" is a regular tab (recorder FAB
+  returns on /ask via the `mic` prop). Labels say "Duel", routes unchanged.
+- **Practice bots:** `api/battle/match` action `bot` (after 40s alone) →
+  solo challenge + `?bot=<name>`; simulation + close-loss standings live in
+  `app/battle/challenge/[id]/page.tsx` (client-only, no server scores).
+- **Anti-double-match:** matchedRef guard in `PlayOnline.tsx`; server `join`
+  returns an existing live unplayed lobby (<30 min) instead of re-queueing.
+- **Live rival box:** `api/social/challenge/progress` → broadcast `progress`
+  on `battle:{id}`; posted from choose() on each answer.
+- **Global pull-to-refresh:** `PullToRefresh` (onRefresh optional → reload)
+  wraps children in `app/layout.tsx`.
+- **Username change:** `api/social/handle` POST accepts `change: true`;
+  UI in Friends "You are" card. `HomeButton` added to `components/ui.tsx`.
+- **Coach:** background sync (instant chat), card-style replies, mic input
+  (`useRecorder`), follow-up-first persona prompt in `api/tutor/chat`.

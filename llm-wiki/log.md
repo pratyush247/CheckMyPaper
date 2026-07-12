@@ -43,3 +43,24 @@ Append-only. Newest first.
 - Polish: swipe nav between tabs (BottomNav), PullToRefresh on Friends.
 - Migrations to run: 0008, 0009, 0010. New env: NEXT_PUBLIC_SUPABASE_URL,
   NEXT_PUBLIC_SUPABASE_ANON_KEY (Vercel + .env.local).
+
+## 2026-07-12 — v4.2: Duel polish (post-field-test fixes)
+- Nav: centre FAB is now Duel (/battle, swords); mic moved to a regular "Ask"
+  tab (still becomes the recorder on /ask). "Battle Mode" → "Duel".
+- Match glitch root cause fixed: a stale 10s poll re-enqueued an already-matched
+  player into a second lobby (screen reset + different questions). Client now
+  navigates exactly once (matchedRef) and leaves the queue; server "join"
+  returns the player's existing live lobby instead of re-queueing.
+- Practice bots: after 40s alone in queue, action:"bot" creates a solo
+  challenge (?bot=name); rival is simulated client-side, always loses by a
+  close margin, never touches leaderboards/friends/server scores.
+- Live rival box during quizzes: /api/social/challenge/progress broadcasts
+  answered/score/time on battle:{id}; small fixed card top-right.
+- Global PullToRefresh in root layout (reload fallback, inner-scroller guard);
+  per-page instance removed from Friends.
+- Friends: HomeButton (ui.tsx) beside back; username change (handle route
+  accepts change:true when the new handle is free).
+- Coach: usable instantly (sync runs in background, "building your memory"
+  pulse), replies render as full-width cards, mic button (useRecorder →
+  transcript into input), persona prompt asks 1-2 follow-ups before answering
+  and checks in until clear.
