@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
     const { data: sc } = await supabase().from("challenge_scores").select("phone,score,time_ms").eq("challenge_id", id);
     const ranked = rankChallenge((sc ?? []).map((s) => ({ phone: s.phone as string, score: s.score as number, timeMs: s.time_ms as number })));
     return NextResponse.json({
-      configured: true, topic: c.data.topic, questions: c.data.question_set,
+      configured: true, topic: c.data.topic, subject: c.data.subject ?? "Unknown", questions: c.data.question_set,
       participants: c.data.participant_phones, status: c.data.status, scores: ranked,
     });
   } catch (err) {

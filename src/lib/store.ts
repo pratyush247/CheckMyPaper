@@ -22,6 +22,7 @@ const KEYS = {
   attempts: "cmp.attempts",
   account: "cmp.account",
   battle: "cmp.battle",
+  battleReviews: "cmp.battleReviews",
 } as const;
 
 const isBrowser = () => typeof window !== "undefined";
@@ -331,6 +332,84 @@ export function getAllMistakes(): MistakeRecord[] {
     });
   }
   return out;
+}
+
+// ---- Battle review (light post-battle review, feeds the same memory) --------
+
+export interface BattleReviewItem {
+  q: string;
+  options: string[];
+  myPick: number;
+  answer: number;
+  explanation: string;
+  tag?: ErrorTag;
+}
+export interface BattleReview {
+  id: string; // challengeId
+  topic: string;
+  subject: Subject;
+  createdAt: number;
+  done: boolean;
+  items: BattleReviewItem[]; // only the questions I got wrong
+}
+
+export function getBattleReviews(): BattleReview[] {
+  return Object.values(read<Record<string, BattleReview>>(KEYS.battleReviews, {}));
+}
+export function getBattleReview(id: string): BattleReview | undefined {
+  return read<Record<string, BattleReview>>(KEYS.battleReviews, {})[id];
+}
+export function getPendingBattleReviews(): BattleReview[] {
+  return getBattleReviews().filter((r) => !r.done && r.items.length > 0).sort((a, b) => b.createdAt - a.createdAt);
+}
+
+// Called right after a battle finishes. A perfect score has nothing to review
+// and is stored done, so the home card stays hidden.
+export function savePendingBattleReview(review: Omit<BattleReview, "createdAt" | "done">) {
+  const all = read<Record<string, BattleReview>>(KEYS.battleReviews, {});
+  if (all[review.id]) return; // replaying results must not resurrect a done review
+  all[review.id] = { ...review, createdAt: Date.now(), done: review.items.length === 0 };
+  write(KEYS.battleReviews, all);
+}
+
+// Finish a review: the tagged mistakes become regular paper/question/attempt
+// records, so weak topics, progress trends, and the coach's memory all learn
+// from battles exactly like they learn from mock papers.
+export function completeBattleReview(id: string, tags: (ErrorTag | undefined)[]) {
+  const all = read<Record<string, BattleReview>>(KEYS.battleReviews, {});
+  const review = all[id];
+  if (!review || review.done) return;
+
+  const paperId = uid();
+  const questions: Question[] = [];
+  const attempts: Attempt[] = [];
+  review.items.forEach((item, i) => {
+    const qid = uid();
+    questions.push({
+      id: qid, paperId, number: i + 1,
+      text: item.q, subject: review.subject, topic: review.topic, state: "wrong",
+    });
+    attempts.push({
+      id: uid(), questionId: qid, paperId, state: "wrong",
+      selfTag: tags[i] ?? "concept",
+      transcript: `Battle answer: picked "${item.options[item.myPick] ?? "?"}", correct was "${item.options[item.answer] ?? "?"}".`,
+      createdAt: Date.now(),
+    });
+  });
+  const paper: Paper = { id: paperId, name: `⚔️ Battle: ${review.topic}`, createdAt: Date.now(), status: "done", questionCount: review.items.length };
+  write(KEYS.papers, [...read<Paper[]>(KEYS.papers, []), paper]);
+  write(KEYS.questions, [...read<Question[]>(KEYS.questions, []), ...questions]);
+  write(KEYS.attempts, [...read<Attempt[]>(KEYS.attempts, []), ...attempts]);
+
+  review.done = true;
+  review.items = review.items.map((it, i) => ({ ...it, tag: tags[i] ?? it.tag }));
+  write(KEYS.battleReviews, all);
+}
+
+// Skip-forever escape hatch (a done review disappears from the home card).
+export function dismissBattleReview(id: string) {
+  const all = read<Record<string, BattleReview>>(KEYS.battleReviews, {});
+  if (all[id]) { all[id].done = true; write(KEYS.battleReviews, all); }
 }
 
 export function getBattleProgress(): Record<string, BattleResult> {

@@ -6,7 +6,7 @@ export interface FriendInfo { id: string; phone: string; handle: string; name: s
 export interface PendingReq { id: string; phone: string; handle: string; name: string; bio?: string | null }
 export interface ChatMessage { id: string; sender: string; body: string; kind: "text" | "challenge" | "result" | "gif" | "vote" | "sticker"; meta: unknown; createdAt: string }
 export interface PeerInfo { phone: string; handle: string; bio: string | null; status: "none" | "pending" | "accepted" | "blocked" }
-export interface ChallengeView { topic: string; questions: unknown[]; participants: string[]; status: string; scores: RankedScore[] }
+export interface ChallengeView { topic: string; subject: string; questions: unknown[]; participants: string[]; status: string; scores: RankedScore[] }
 
 const j = (r: Response) => r.json();
 

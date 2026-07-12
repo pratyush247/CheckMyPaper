@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { TopBar, AppLoading } from "@/components/ui";
-import { getAccount } from "@/lib/store";
+import { getAccount, savePendingBattleReview, getBattleReview } from "@/lib/store";
+import type { Subject } from "@/lib/types";
 import { useMounted } from "@/lib/useStore";
 import { fmtTime } from "@/lib/battle";
 import { getChallenge, submitChallengeScore, getPeers, connect, type RankedScore, type PeerInfo } from "@/lib/socialClient";
@@ -21,6 +22,7 @@ export default function ChallengePlayPage() {
 
   const [phase, setPhase] = useState<Phase>("loading");
   const [topic, setTopic] = useState("");
+  const [subject, setSubject] = useState("Unknown");
   const [quiz, setQuiz] = useState<QuizQuestion[]>([]);
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState<number[]>([]);
@@ -41,6 +43,7 @@ export default function ChallengePlayPage() {
         return;
       }
       setTopic(c.topic);
+      setSubject(c.subject ?? "Unknown");
       setQuiz(c.questions as QuizQuestion[]);
       setParticipants(c.participants ?? []);
       if ((c.scores ?? []).some((s) => s.phone === phone)) {
@@ -79,6 +82,14 @@ export default function ChallengePlayPage() {
   async function finish() {
     const score = quiz.reduce((s, q, i) => s + (answers[i] === q.answer ? 1 : 0), 0);
     const timeMs = Date.now() - startRef.current;
+    // Queue the light review of what I got wrong — it feeds the same memory as
+    // mock papers (weak topics, trends, the coach).
+    savePendingBattleReview({
+      id, topic, subject: subject as Subject,
+      items: quiz
+        .map((q, i) => ({ q: q.q, options: q.options, myPick: answers[i], answer: q.answer, explanation: q.explanation }))
+        .filter((it) => it.myPick !== it.answer),
+    });
     setPhase("result");
     const r = await submitChallengeScore(id, phone, score, timeMs);
     if (r.ok) setRanked(r.ranked);
@@ -134,7 +145,12 @@ export default function ChallengePlayPage() {
 
           <FriendPopup me={phone} name={account?.name ?? ""} phones={participants} />
 
-          <button onClick={() => router.push("/")} className="btn btn-primary mt-5 w-full">Home →</button>
+          {!getBattleReview(id)?.done && (
+            <button onClick={() => router.push(`/battle/review/${id}`)} className="btn btn-primary mt-5 w-full">
+              Review your mistakes → <span className="font-normal opacity-80">(~2 min)</span>
+            </button>
+          )}
+          <button onClick={() => router.push("/")} className={`btn mt-3 w-full ${getBattleReview(id)?.done ? "btn-primary" : "btn-line"}`}>Home →</button>
         </div>
       </main>
     );

@@ -7,7 +7,7 @@ import { ProfileButton } from "@/components/ProfileButton";
 import { Tile } from "@/components/Tile";
 import { DevSeed } from "@/components/DevSeed";
 import { TopBar, TrafficDot, AppLoading } from "@/components/ui";
-import { computeProfile, getAccount, getPapers } from "@/lib/store";
+import { computeProfile, getAccount, getPapers, getPendingBattleReviews } from "@/lib/store";
 import { useStoreVersion, useMounted } from "@/lib/useStore";
 import type { Paper } from "@/lib/types";
 
@@ -34,6 +34,7 @@ export default function Home() {
   const papers = useMemo(() => getPapers(), [v]);
   const profile = useMemo(() => computeProfile(), [v]);
   const account = useMemo(() => getAccount(), [v]);
+  const pendingReviews = useMemo(() => (mounted ? getPendingBattleReviews() : []), [v, mounted]);
 
   if (!mounted) return <AppLoading />;
 
@@ -73,6 +74,20 @@ export default function Home() {
         </div>
 
         <DevSeed />
+
+        {/* Battle review pending — hidden when there's nothing to review */}
+        {pendingReviews.length > 0 && (
+          <Link href={`/battle/review/${pendingReviews[0].id}`} className="mt-3 block">
+            <div className="tile tile-purple">
+              <div className="flex items-center gap-2 text-[0.7rem] font-extrabold uppercase tracking-wider opacity-80">
+                ⚔️ Battle review pending
+              </div>
+              <p className="mt-1.5 text-[0.98rem] font-bold leading-snug">
+                {pendingReviews[0].items.length} mistake{pendingReviews[0].items.length === 1 ? "" : "s"} from {pendingReviews[0].topic} — tag them in ~2 min so your coach learns from this battle →
+              </p>
+            </div>
+          </Link>
+        )}
 
         {/* Pattern highlight */}
         {profile.totalDiagnosed > 0 && topTag && (
