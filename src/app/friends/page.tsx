@@ -6,6 +6,7 @@ import { TopBar, AppLoading } from "@/components/ui";
 import { getAccount } from "@/lib/store";
 import { useStoreVersion, useMounted } from "@/lib/useStore";
 import { getMe, claimHandle, searchHandles, connect, respond, getFriends, type FriendInfo, type PendingReq } from "@/lib/socialClient";
+import { GroupSection } from "@/components/GroupSection";
 
 export default function FriendsPage() {
   const v = useStoreVersion();
@@ -136,6 +137,8 @@ export default function FriendsPage() {
                 Copy invite link ({invite})
               </button>
             </div>
+
+            <GroupSection phone={phone} name={name} friends={friends} />
 
             <div className="card p-4">
               <h2 className="text-sm font-bold">Add a friend</h2>

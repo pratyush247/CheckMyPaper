@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { TopBar, AppLoading } from "@/components/ui";
-import { Friends } from "@/components/Friends";
 import { FeedbackForm } from "@/components/FeedbackForm";
 import { clearAccount, computeProfile, getAccount, saveAccount } from "@/lib/store";
 import { saveProfile } from "@/lib/socialClient";
@@ -79,7 +79,13 @@ export default function ProfilePage() {
 
         <StudyProfile phone={account.phone} name={account.name} klass={account.klass} weakSubject={account.weakSubject} />
 
-        <Friends phone={account.phone} name={account.name} />
+        <Link href="/friends" className="card mt-4 flex items-center justify-between p-4">
+          <span>
+            <span className="block text-sm font-bold">Friends &amp; squads 👥</span>
+            <span className="block text-xs text-[var(--color-ink-soft)]">Add friends, build a squad, challenge them.</span>
+          </span>
+          <span className="text-[var(--color-ink-soft)]">→</span>
+        </Link>
 
         <FeedbackForm />
 
