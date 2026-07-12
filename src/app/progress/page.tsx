@@ -6,7 +6,8 @@ import { BottomNav } from "@/components/BottomNav";
 import { Tile } from "@/components/Tile";
 import { TopBar, EmptyState, AppLoading } from "@/components/ui";
 import { TAG_MAP, TAG_SHORT } from "@/lib/errorTags";
-import { computeProfile, getPapers } from "@/lib/store";
+import { computeProfile, getPapers, getAccount } from "@/lib/store";
+import { MyBattleStats } from "@/components/BattleStats";
 import { useStoreVersion, useMounted } from "@/lib/useStore";
 import type { ErrorTag } from "@/lib/types";
 
@@ -56,6 +57,9 @@ export default function ProgressPage() {
           <Tile color="purple" emoji="🧠" label="Top leak" value={`${topShare}%`} caption={topTag ? TAG_SHORT[topTag] : ""} />
           <Tile color="sky" emoji="🔁" label="Focus" value={<span className="text-lg leading-tight">{focusTopic ?? "—"}</span>} caption="revise this next" />
         </div>
+
+        {/* Battle analytics across every squad + online play */}
+        <MyBattleStats phone={getAccount()?.phone ?? ""} />
 
         {/* Mistake mix */}
         <div className="card mt-5 p-5">

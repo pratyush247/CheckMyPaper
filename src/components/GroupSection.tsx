@@ -7,6 +7,7 @@ import {
   type Group, type GroupMember, type SquadInvite,
 } from "@/lib/multiplayer";
 import { useRealtime, useFocusRefetch } from "@/lib/realtimeClient";
+import { SquadLeaderboard } from "@/components/BattleStats";
 
 const MAX = 8;
 type Friend = { handle: string; phone: string; name?: string };
@@ -194,6 +195,8 @@ export function GroupSection({ phone, name, friends }: { phone: string; name: st
         )}
         {msg && <p className="mt-2 text-xs font-semibold text-[var(--color-violet-ink)]">{msg}</p>}
       </div>
+
+      {active && <SquadLeaderboard code={active} me={phone} />}
     </>
   );
 }
