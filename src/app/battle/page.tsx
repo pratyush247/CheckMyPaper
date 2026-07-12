@@ -4,9 +4,11 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { BottomNav } from "@/components/BottomNav";
 import { TopBar, EmptyState, SubjectTag, AppLoading } from "@/components/ui";
-import { getBattleProgress, getWeakTopics } from "@/lib/store";
+import { getBattleProgress, getWeakTopics, getAccount } from "@/lib/store";
 import { useStoreVersion, useMounted } from "@/lib/useStore";
 import { fmtTime } from "@/lib/battle";
+import { PlayOnline } from "@/components/PlayOnline";
+import { GlobalLeaderboard } from "@/components/BattleStats";
 
 export default function BattlePage() {
   const v = useStoreVersion();
@@ -20,11 +22,16 @@ export default function BattlePage() {
     <main className="pb-28">
       <TopBar title="Battle Mode ⚔️" />
 
+      <div className="mb-4 flex flex-col gap-4 px-4">
+        <PlayOnline />
+        <GlobalLeaderboard me={getAccount()?.phone ?? ""} />
+      </div>
+
       {topics.length === 0 ? (
         <>
           <EmptyState
             emoji="⚔️"
-            title="No battles yet"
+            title="No solo stages yet"
             body="Review a mock paper first — your weak topics become battle stages to clear, one concept at a time."
           />
           <div className="px-4">
