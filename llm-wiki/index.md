@@ -119,3 +119,28 @@ Redeploy: `vercel --prod` (CLI at `~/.hermes/node/bin/vercel`). Auto-deploy on p
   UI in Friends "You are" card. `HomeButton` added to `components/ui.tsx`.
 - **Coach:** background sync (instant chat), card-style replies, mic input
   (`useRecorder`), follow-up-first persona prompt in `api/tutor/chat`.
+
+## v4.3 delta (2026-07-13)
+- **Bot fallback speed:** `components/PlayOnline.tsx` poll interval 10s→5s,
+  bot-summon threshold 40s→5s waited-alone (session forms in ~10s total).
+- **Bio:** capped to 15 chars in `api/social/me` POST and client input;
+  Friends "You are" tile now shows the saved bio as a subheading under
+  `@handle` with an "Edit bio" toggle, gated on a `savedBio` state kept
+  separate from the input draft (draft-only gating made the field vanish
+  mid-keystroke on first save).
+- **Unfriend:** `friends/[handle]/page.tsx` ⋯ menu — reuses
+  `respond(phone, friendshipId, "decline")` (any non-accept/block action
+  deletes the friendship row server-side), distinct from Block.
+- **Duel review, one-shot report + edits:** `lib/store.ts`
+  `completeBattleReview()` now returns the paperId (or `null` if the edit
+  cap is used up) instead of void; `BattleReview` gained `paperId` and
+  `editCount`. `app/battle/review/[id]/page.tsx` calls `/api/insight`
+  itself right after tagging (mirroring `papers/[id]/narrate`) and writes
+  `setPaperInsight` in the same flow — previously the paper record was
+  created but never got an insight, so opening it from the homepage always
+  read "not reviewed yet." A completed review can be re-tagged up to 2
+  times; edits reuse the same paperId (old questions/attempts for that
+  paperId are dropped and rewritten) so the report regenerates in place
+  instead of duplicating papers. Entry point button in
+  `battle/challenge/[id]/page.tsx` switches from "Review your mistakes" to
+  "Edit review (n left)" once done.
