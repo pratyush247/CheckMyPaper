@@ -116,15 +116,26 @@ export default function RevisePage() {
             5 easy → 10 medium → 5 hard. One wrong answer and the run restarts from zero — clear all 20 to master the topic.
           </p>
           <div className="grid grid-cols-2 gap-2.5">
-            <Link href={`/revise/${encodeURIComponent(topic)}/practice?mode=timed`} className="tile tile-orange">
-              <div className="text-[0.7rem] font-extrabold uppercase tracking-wider opacity-80">⏱ Timed</div>
-              <p className="mt-1 text-lg font-extrabold">JEE pace</p>
-              <p className="mt-0.5 text-xs opacity-80">48 min for 20 — same clock pressure as the real exam</p>
+            {/* Same anatomy as the home tiles: label left, emoji right, headline, caption. */}
+            <Link href={`/revise/${encodeURIComponent(topic)}/practice?mode=timed`} className="block transition-transform active:scale-[0.98]">
+              <div className="tile tile-orange flex h-full flex-col">
+                <div className="flex items-start justify-between">
+                  <span className="text-[0.7rem] font-extrabold uppercase tracking-wider opacity-80">Timed</span>
+                  <span className="text-xl leading-none">⏱</span>
+                </div>
+                <p className="font-display mt-1.5 text-xl font-bold leading-tight">JEE pace</p>
+                <p className="mt-1 text-[0.72rem] font-semibold leading-snug opacity-75">48 min for 20 — same clock pressure as the real exam</p>
+              </div>
             </Link>
-            <Link href={`/revise/${encodeURIComponent(topic)}/practice?mode=zen`} className="tile tile-purple">
-              <div className="text-[0.7rem] font-extrabold uppercase tracking-wider opacity-80">🧘 No timer</div>
-              <p className="mt-1 text-lg font-extrabold">Zen mode</p>
-              <p className="mt-0.5 text-xs opacity-80">Take your time — accuracy is all that counts</p>
+            <Link href={`/revise/${encodeURIComponent(topic)}/practice?mode=zen`} className="block transition-transform active:scale-[0.98]">
+              <div className="tile tile-purple flex h-full flex-col">
+                <div className="flex items-start justify-between">
+                  <span className="text-[0.7rem] font-extrabold uppercase tracking-wider opacity-80">No timer</span>
+                  <span className="text-xl leading-none">🧘</span>
+                </div>
+                <p className="font-display mt-1.5 text-xl font-bold leading-tight">Zen mode</p>
+                <p className="mt-1 text-[0.72rem] font-semibold leading-snug opacity-75">Take your time — accuracy is all that counts</p>
+              </div>
             </Link>
           </div>
         </div>
