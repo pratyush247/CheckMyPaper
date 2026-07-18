@@ -109,12 +109,18 @@ export default function ProgressPage() {
             </p>
             <ul className="flex flex-col gap-2">
               {topicEntries.slice(0, 5).map(([topic, t]) => (
-                <li key={topic} className="flex items-center justify-between rounded-xl bg-[var(--color-paper-2)] px-4 py-2.5">
-                  <span className="text-sm font-semibold">{topic}</span>
-                  <span className="text-xs font-bold text-[var(--color-violet)]">{t.papers.length >= 2 ? `${t.papers.length} papers` : `${t.count}×`}</span>
+                <li key={topic}>
+                  <Link href={`/revise/${encodeURIComponent(topic)}`} className="flex items-center justify-between rounded-xl bg-[var(--color-paper-2)] px-4 py-2.5">
+                    <span className="text-sm font-semibold">{topic}</span>
+                    <span className="flex items-center gap-1.5 text-xs font-bold text-[var(--color-violet)]">
+                      {t.papers.length >= 2 ? `${t.papers.length} papers` : `${t.count}×`}
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                    </span>
+                  </Link>
                 </li>
               ))}
             </ul>
+            <p className="mt-2 text-xs text-[var(--color-ink-soft)]">Tap a topic → concepts, flashcards, mind map & mastery practice.</p>
           </div>
         )}
 

@@ -142,7 +142,7 @@ export default function TutorPage() {
               </p>
             )}
             {configured === false && (
-              <p className="mt-2 text-xs font-medium text-[var(--color-bad)]">Tutor backend isn&apos;t configured.</p>
+              <p className="mt-2 text-xs font-medium text-[var(--color-bad)]">Coach is offline right now — try again in a bit.</p>
             )}
           </div>
         )}
