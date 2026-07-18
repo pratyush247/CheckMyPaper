@@ -7,6 +7,38 @@ project: CheckMyPaper
 
 Append-only. Newest first.
 
+## 2026-07-18 — v4.4: revise hub + mastery practice + copy fix
+
+- **Bug (field report):** "Add a DeepSeek API key…" appeared in production
+  insight notes. Root cause: `diagnose()` fell into the mock branch whenever
+  the transcript was EMPTY (student tagged without narrating), not only when
+  the key was missing — and the fallback copy was developer-facing. Fix:
+  note is now empty in that branch (insight page hides note-less rows);
+  every remaining mock string (visual, quiz, tutor banner) reworded
+  student-friendly with no key/provider mentions.
+- **Revise hub** `/revise/[topic]`: clubs every wrong question of a topic,
+  with three NotebookLM-style tools on tabs — Concepts (4-8 concepts behind
+  the mistakes, Hinglish Idea/Jaise/JEE-mein explanations), Flashcards
+  (10-14 tap-to-flip cards), Mind map (collapsible tree). One API route
+  `/api/revise` (kind: concepts|flashcards|mindmap) grounded in the
+  student's own wrong questions.
+- **Mastery practice** `/revise/[topic]/practice?mode=timed|zen`
+  (mastery-learning error-reset drill): 20-question ladder — 5 easy →
+  10 medium → 5 hard (`ladder` option on `/api/quiz` and `generateQuiz`) —
+  one wrong answer or timeout restarts from Q1 on the same set; timed mode
+  = JEE Main pacing (2.4 min/q → 48 min countdown), zen = no clock. Fail
+  screen shows pick vs correct + explanation + best-of-session.
+- **Entry points:** progress "Revise these next" rows and insight "Topic to
+  revisit" now link to the hub.
+- Verified live on production: concepts/flashcards/mind map generation,
+  correct-answer advance, wrong-answer reset, restart, 48-min countdown.
+- Local `next dev` was wedged this session (env issue, zero output, event
+  loop parked — unrelated to the diff); verified via Vercel deploy instead.
+  `.claude/launch.json` gained `autoPort: true` since a stray server from
+  another project held port 3000.
+- Deferred: persisting a "mastered" badge per topic; streaming the concept
+  generation (first paint is ~40-60s on a cold topic).
+
 ## 2026-07-13 — v4.3: field-test fixes round 2
 
 - PlayOnline: bot fallback now joins within ~10s (poll every 5s, summon at

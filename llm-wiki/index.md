@@ -144,3 +144,18 @@ Redeploy: `vercel --prod` (CLI at `~/.hermes/node/bin/vercel`). Auto-deploy on p
   instead of duplicating papers. Entry point button in
   `battle/challenge/[id]/page.tsx` switches from "Review your mistakes" to
   "Edit review (n left)" once done.
+
+## v4.4 delta (2026-07-18)
+- **Revise hub:** `app/revise/[topic]` (clubbed wrong questions + tool tabs)
+  backed by `api/revise` (kind: concepts | flashcards | mindmap, grounded in
+  the student's wrong questions; Hinglish concept explanations). Entry
+  points: progress "Revise these next" rows, insight "Topic to revisit".
+- **Mastery practice:** `app/revise/[topic]/practice?mode=timed|zen` —
+  20-question difficulty ladder (5 easy/10 medium/5 hard) via the new
+  `ladder` option on `api/quiz` / `generateQuiz` (`lib/ai.ts`); any wrong
+  answer (or the 48-min JEE-pace countdown in timed mode) restarts the run
+  from Q1 on the same set.
+- **Copy fix:** `diagnose()` in `lib/ai.ts` no longer emits "Add a DeepSeek
+  API key…" for empty-transcript tags (note omitted; insight hides the
+  row); all mock fallback strings are now student-safe.
+- `.claude/launch.json`: `autoPort: true`.
