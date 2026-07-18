@@ -83,14 +83,14 @@ export default function RevisePage() {
           </div>
         )}
 
-        {/* Tool switcher */}
-        <div className="flex gap-2">
+        {/* Tool switcher — nowrap chips in a scrollable row so labels never break mid-word */}
+        <div className="no-scrollbar flex gap-2 overflow-x-auto">
           {([
             ["concepts", "💡 Concepts"],
             ["flashcards", "🗂️ Flashcards"],
             ["mindmap", "🕸️ Mind map"],
           ] as [Tool, string][]).map(([t, label]) => (
-            <button key={t} onClick={() => setTool(t)} className="chip" data-on={tool === t}>{label}</button>
+            <button key={t} onClick={() => setTool(t)} className="chip shrink-0 whitespace-nowrap" data-on={tool === t}>{label}</button>
           ))}
         </div>
 
@@ -112,8 +112,16 @@ export default function RevisePage() {
         {/* Mastery practice modes */}
         <div>
           <h2 className="mb-2 text-sm font-extrabold uppercase tracking-wide text-[var(--color-ink-soft)]">Mastery practice 🎯</h2>
-          <p className="mb-2 text-xs text-[var(--color-ink-soft)]">
-            5 easy → 10 medium → 5 hard. One wrong answer and the run restarts from zero — clear all 20 to master the topic.
+          {/* The ladder as pills, not prose — a long sentence wraps with a dangling dash. */}
+          <div className="mb-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[0.72rem] font-bold text-[var(--color-ink-soft)]">
+            <span className="rounded-full bg-[var(--color-paper-2)] px-2.5 py-1">5 easy</span>
+            <span aria-hidden>→</span>
+            <span className="rounded-full bg-[var(--color-paper-2)] px-2.5 py-1">10 medium</span>
+            <span aria-hidden>→</span>
+            <span className="rounded-full bg-[var(--color-paper-2)] px-2.5 py-1">5 hard</span>
+          </div>
+          <p className="mb-2.5 text-xs leading-relaxed text-[var(--color-ink-soft)]">
+            One wrong answer restarts the run. Clear all 20 to master it.
           </p>
           <div className="grid grid-cols-2 gap-2.5">
             {/* Same anatomy as the home tiles: label left, emoji right, headline, caption. */}
