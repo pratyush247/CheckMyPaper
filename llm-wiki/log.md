@@ -123,3 +123,13 @@ Append-only. Newest first.
   auto-sends the transcript (AI answers in text); Friends page restyled to the
   home card language (purple identity tile, uppercase section headers,
   friend rows as cards).
+
+## 2026-07-19 — home entry tile for the Revise hub
+
+- Home now shows a full-width pink "REVISE" tile directly under the 2×2
+  feature grid — top weak topic as the headline, "Concepts · flashcards ·
+  mind map · mastery runs" caption — linking to `/revise/[topic]`. Hidden
+  until the student has weak topics; pink completes the grid palette
+  (yellow/lime/purple/sky) without adding a nav item or crowding the grid.
+- Other entry points unchanged (progress list rows, insight "Topic to
+  revisit"), so the hub has one calm anchor per screen, no clutter.
