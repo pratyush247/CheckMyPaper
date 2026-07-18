@@ -7,7 +7,7 @@ import { ProfileButton } from "@/components/ProfileButton";
 import { Tile } from "@/components/Tile";
 import { DevSeed } from "@/components/DevSeed";
 import { TopBar, TrafficDot, AppLoading } from "@/components/ui";
-import { computeProfile, getAccount, getPapers, getPendingBattleReviews } from "@/lib/store";
+import { computeProfile, getAccount, getPapers, getPendingBattleReviews, getWeakTopics } from "@/lib/store";
 import { useStoreVersion, useMounted } from "@/lib/useStore";
 import type { Paper } from "@/lib/types";
 
@@ -35,6 +35,7 @@ export default function Home() {
   const profile = useMemo(() => computeProfile(), [v]);
   const account = useMemo(() => getAccount(), [v]);
   const pendingReviews = useMemo(() => (mounted ? getPendingBattleReviews() : []), [v, mounted]);
+  const weakTopics = useMemo(() => (mounted ? getWeakTopics().slice(0, 3) : []), [v, mounted]);
 
   if (!mounted) return <AppLoading />;
 
@@ -72,6 +73,23 @@ export default function Home() {
           <Tile color="purple" emoji="🧠" label="Ask" value="Coach" caption="Chat with your mistakes" href="/tutor" />
           <Tile color="sky" emoji="📊" label="Stats" value="Progress" caption="See your patterns grow" href="/progress" />
         </div>
+
+        {/* Revise hub — one calm, full-width tile for the newest tools, only
+            once there's something to revise. Pink completes the grid palette. */}
+        {weakTopics.length > 0 && (
+          <Link href={`/revise/${encodeURIComponent(weakTopics[0].topic)}`} className="mt-3 block transition-transform active:scale-[0.98]">
+            <div className="tile tile-pink">
+              <div className="flex items-start justify-between">
+                <span className="text-[0.7rem] font-extrabold uppercase tracking-wider opacity-80">Revise</span>
+                <span className="text-xl leading-none">🗂️</span>
+              </div>
+              <div className="font-display mt-1.5 text-xl font-bold leading-tight">{weakTopics[0].topic}</div>
+              <p className="mt-1 text-[0.72rem] font-semibold leading-snug opacity-75">
+                Concepts · flashcards · mind map · mastery runs — built from your mistakes →
+              </p>
+            </div>
+          </Link>
+        )}
 
         <DevSeed />
 
