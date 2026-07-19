@@ -60,6 +60,8 @@ export const report = (reporter: string, target: string, opts: { messageId?: str
 
 export const saveProfile = (phone: string, name: string, klass?: string, weakSubject?: string) =>
   post("/api/social/profile", { phone, name, klass, weakSubject }) as Promise<{ ok: boolean }>;
+export const lookupProfile = (phone: string) =>
+  get(`/api/social/profile?phone=${phone}`) as Promise<{ configured: boolean; exists: boolean; name?: string; klass?: string; weakSubject?: string }>;
 
 export interface TopicRef { topic: string; subject: string }
 export const syncWeakTopics = (phone: string, topics: TopicRef[]) =>
