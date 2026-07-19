@@ -161,7 +161,7 @@ export default function LoginPage() {
           onClick={() => { setReturning((r) => !r); setTouched(false); setLoginMsg(""); }}
           className="mt-3 w-full text-center text-sm font-bold text-[var(--color-violet)] underline underline-offset-2"
         >
-          {returning ? "New here? Sign up instead" : "Used CheckMyPaper before? Log in with just your number"}
+          {returning ? "New here? Sign up" : "Already a user? Log in"}
         </button>
         <p className="mt-3 text-center text-xs text-[var(--color-ink-soft)]">
           Saved on your device. We&apos;ll never share it.
