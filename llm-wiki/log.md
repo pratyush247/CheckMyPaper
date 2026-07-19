@@ -133,3 +133,19 @@ Append-only. Newest first.
   (yellow/lime/purple/sky) without adding a nav item or crowding the grid.
 - Other entry points unchanged (progress list rows, insight "Topic to
   revisit"), so the hub has one calm anchor per screen, no clutter.
+
+## 2026-07-19 — number-only login for returning users
+
+- `GET /api/social/profile?phone=` looks up an existing student row
+  (name/class/weak_subject) — the first read path on that route.
+- Login page gained a mode toggle: "Used CheckMyPaper before? Log in with
+  just your number" collapses the signup form to the phone field + "Log me
+  back in". Found → `saveAccount` from the server profile → home. Not
+  found → friendly message and auto-switch back to signup with the number
+  preserved. weakSubject from the server is validated against the Subject
+  union before being stored.
+- Verified locally against live Supabase: known number logged straight in
+  ("Hey Test 👋"), unknown number fell back to signup. Deployed to prod.
+- Note: login is still trust-based (no OTP) by design — anyone knowing a
+  number could restore that profile; acceptable for the pilot, revisit
+  before scale.
