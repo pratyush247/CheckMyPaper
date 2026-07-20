@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { TopBar, AppLoading, SubjectTag } from "@/components/ui";
 import { getWeakTopics, getWrongQuestionsForTopic } from "@/lib/store";
 import { useMounted } from "@/lib/useStore";
+import { findSubjectFor } from "@/lib/syllabus";
 
 interface ConceptItem { name: string; explanation: string }
 interface Flashcard { front: string; back: string }
@@ -20,7 +21,10 @@ export default function RevisePage() {
   const mounted = useMounted();
   const { topic: raw } = useParams<{ topic: string }>();
   const topic = decodeURIComponent(raw);
-  const subject = useMemo(() => getWeakTopics().find((t) => t.topic === topic)?.subject || "Unknown", [topic]);
+  const subject = useMemo(
+    () => getWeakTopics().find((t) => t.topic === topic)?.subject || findSubjectFor(topic) || "Unknown",
+    [topic],
+  );
   const wrongQs = useMemo(() => (mounted ? getWrongQuestionsForTopic(topic) : []), [mounted, topic]);
 
   const [tool, setTool] = useState<Tool>("concepts");
@@ -98,7 +102,9 @@ export default function RevisePage() {
           <div className="card animate-pulse p-6 text-center">
             <p className="text-3xl">{tool === "concepts" ? "💡" : tool === "flashcards" ? "🗂️" : "🕸️"}</p>
             <p className="mt-1 text-sm font-bold">
-              {tool === "concepts" ? "Finding the concepts behind your mistakes…" : tool === "flashcards" ? "Writing your flashcards…" : "Drawing your mind map…"}
+              {tool === "concepts"
+                ? wrongQs.length > 0 ? "Finding the concepts behind your mistakes…" : "Mapping the key concepts…"
+                : tool === "flashcards" ? "Writing your flashcards…" : "Drawing your mind map…"}
             </p>
           </div>
         ) : tool === "concepts" ? (

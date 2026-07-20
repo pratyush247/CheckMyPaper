@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { TopBar, AppLoading } from "@/components/ui";
 import { getAccount, getWeakTopics } from "@/lib/store";
 import { useMounted } from "@/lib/useStore";
+import { findSubjectFor } from "@/lib/syllabus";
 import { fmtTime } from "@/lib/battle";
 
 interface QuizQuestion { q: string; options: string[]; answer: number; explanation: string }
@@ -25,7 +26,10 @@ export default function MasteryPracticePage() {
     () => (typeof window === "undefined" ? false : new URLSearchParams(window.location.search).get("mode") === "timed"),
     [],
   );
-  const subject = useMemo(() => getWeakTopics().find((t) => t.topic === topic)?.subject || "Unknown", [topic]);
+  const subject = useMemo(
+    () => getWeakTopics().find((t) => t.topic === topic)?.subject || findSubjectFor(topic) || "Unknown",
+    [topic],
+  );
 
   const [phase, setPhase] = useState<Phase>("loading");
   const [quiz, setQuiz] = useState<QuizQuestion[]>([]);
