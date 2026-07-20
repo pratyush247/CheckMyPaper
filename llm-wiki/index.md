@@ -159,3 +159,15 @@ Redeploy: `vercel --prod` (CLI at `~/.hermes/node/bin/vercel`). Auto-deploy on p
   API key…" for empty-transcript tags (note omitted; insight hides the
   row); all mock fallback strings are now student-safe.
 - `.claude/launch.json`: `autoPort: true`.
+
+## v4.5 delta (2026-07-20)
+- **Revise home:** `app/revise/page.tsx` — suggested weak topics (top 5,
+  mistake counts + subject tags) + full JEE syllabus browser (subject +
+  Class 11/12/All chips defaulting from the profile; chapter cards expand
+  to "Full chapter" + subtopic chips). Home REVISE tile always shows and
+  links here.
+- **Syllabus subtopics:** `lib/syllabus.ts` — `SyllabusTopic.sub: string[]`
+  (3-5 per chapter, all subjects) + `findSubjectFor(name)` (chapter or
+  subtopic → subject). Hub + practice pages use it as the subject fallback
+  after weak topics, so any syllabus pick powers concepts / flashcards /
+  mind map / both mastery modes.

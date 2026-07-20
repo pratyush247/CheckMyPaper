@@ -149,3 +149,22 @@ Append-only. Newest first.
 - Note: login is still trust-based (no OTP) by design — anyone knowing a
   number could restore that profile; acceptable for the pilot, revisit
   before scale.
+
+## 2026-07-20 — Revise home: suggested weak areas + syllabus browser
+
+- New `/revise` index page: "Suggested for you" (top 5 weak topics with
+  mistake/paper counts + subject tags) above "Browse the syllabus" —
+  subject chips + Class 11/12/All filter (both default from the profile),
+  chapter cards expanding to "📖 Full chapter" + subtopic chips.
+- `syllabus.ts`: every chapter gained `sub: string[]` (3-5 JEE subtopics,
+  all 78 chapters) + `findSubjectFor(name)` resolving a chapter OR
+  subtopic to its subject. Battle ladder code untouched (additive field).
+- Revise hub + mastery practice now resolve subject via weak topics →
+  syllabus fallback, so any syllabus pick gets correct concepts /
+  flashcards / mind map / timed & zen ladders; `/api/revise` already
+  handled the no-wrong-questions case ("standard JEE essentials").
+  Loader copy no longer says "your mistakes" when browsing fresh topics.
+- Home pink REVISE tile now always shows and links to `/revise`
+  (headline = top weak topic, else "Any topic, any time").
+- Verified locally: syllabus browse → Nernst Equation subtopic generated
+  real Hinglish concepts; seeded weak topics render in Suggested. Deployed.
