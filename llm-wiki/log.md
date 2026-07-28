@@ -168,3 +168,16 @@ Append-only. Newest first.
   (headline = top weak topic, else "Any topic, any time").
 - Verified locally: syllabus browse → Nernst Equation subtopic generated
   real Hinglish concepts; seeded weak topics render in Suggested. Deployed.
+
+## 2026-07-29 — README rewrite + repo/secrets audit
+
+- Rewrote root `README.md` from the stale v1-only doc to reflect the current
+  feature set (Duel, Friends/social, Coach/tutor, Progress, Revise + syllabus
+  browser + mastery practice) — feature table, architecture diagram, env-var
+  table with per-key fallback behavior, project layout, key-rotation steps.
+- **Audit finding:** `.env.example` was missing `ADMIN_TOKEN` (used by
+  `GET /api/feedback` to gate the pilot review list) — added with a comment.
+- **Verified:** `git log --all -- .env.local .env` returns nothing — no env
+  file with real keys has ever been committed; `.gitignore` already excludes
+  `.env*` except `.env.example`. Working tree was already clean and in sync
+  with `origin/feat/social-peer-connect` — nothing new needed pushing.
