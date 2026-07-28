@@ -181,3 +181,15 @@ Append-only. Newest first.
   file with real keys has ever been committed; `.gitignore` already excludes
   `.env*` except `.env.example`. Working tree was already clean and in sync
   with `origin/feat/social-peer-connect` — nothing new needed pushing.
+
+## 2026-07-29 — Repo made public + README screenshots
+
+- Repo visibility flipped to public (`gh repo edit --visibility public`) —
+  confirmed via audit above that no secrets were ever committed.
+- Added `docs/screenshots/{home,revise,duel}.png` (375×812 mobile captures)
+  to the README hero. Captured headless via `playwright-cli` against
+  **production** (not local `next dev`, which hit the known dev-server
+  wedge again — process alive, 0% CPU, never printed "Ready" even after
+  clearing `.next`; worked around by screenshotting the deployed app
+  instead of debugging the wedge further) using a disposable demo account
+  (name "Aarav", a non-real 10-digit number) — no real user data involved.
