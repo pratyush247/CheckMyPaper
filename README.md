@@ -13,6 +13,12 @@ No coaching institute diagnoses *reasoning patterns* at scale. That's the bet.
 
 **Live:** [checkmypaper.vercel.app](https://checkmypaper.vercel.app)
 
+<p align="center">
+  <img src="docs/screenshots/home.png" width="270" alt="Home screen — Scan, Duel, Coach, Progress, Revise tiles" />
+  <img src="docs/screenshots/revise.png" width="270" alt="Revise — suggested weak topics + JEE syllabus browser" />
+  <img src="docs/screenshots/duel.png" width="270" alt="Duel — online matchmaking by subject and class" />
+</p>
+
 ---
 
 ## ✨ What's inside
