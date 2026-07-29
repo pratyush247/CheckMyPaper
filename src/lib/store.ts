@@ -22,6 +22,7 @@ const KEYS = {
   attempts: "cmp.attempts",
   account: "cmp.account",
   battle: "cmp.battle",
+  battleReviews: "cmp.battleReviews",
 } as const;
 
 const isBrowser = () => typeof window !== "undefined";
@@ -51,14 +52,44 @@ export function getAccount(): Account | null {
   return read<Account | null>(KEYS.account, null);
 }
 
-export function saveAccount(name: string, phone: string): Account {
-  const account: Account = { name: name.trim(), phone: phone.replace(/\D/g, ""), createdAt: Date.now() };
+export function saveAccount(name: string, phone: string, extra?: { klass?: string; weakSubject?: Subject }): Account {
+  const prev = getAccount();
+  const account: Account = {
+    name: name.trim(),
+    phone: phone.replace(/\D/g, ""),
+    klass: extra?.klass ?? prev?.klass,
+    weakSubject: extra?.weakSubject ?? prev?.weakSubject,
+    createdAt: prev?.createdAt ?? Date.now(),
+  };
   write(KEYS.account, account);
   return account;
 }
 
 export function clearAccount() {
   write(KEYS.account, null);
+}
+
+// Dev-only: drop a seeded paper with wrong answers across a few topics so
+// getWeakTopics() / battle / challenges have data without grinding a real paper.
+export function seedDemoData() {
+  const paperId = uid();
+  const topics: [string, Subject][] = [
+    ["Rotational Motion", "Physics"],
+    ["Electrostatics", "Physics"],
+    ["Thermodynamics", "Chemistry"],
+    ["Probability", "Maths"],
+  ];
+  const questions: Question[] = [];
+  const attempts: Attempt[] = [];
+  topics.forEach(([topic, subject], i) => {
+    const qid = uid();
+    questions.push({ id: qid, paperId, number: i + 1, text: `Sample ${topic} question`, subject, topic, state: "wrong" });
+    attempts.push({ id: uid(), questionId: qid, paperId, state: i % 2 ? "guessed" : "wrong", selfTag: "concept", createdAt: Date.now() });
+  });
+  const paper: Paper = { id: paperId, name: "Demo Mock (seeded)", createdAt: Date.now(), status: "done", questionCount: questions.length };
+  write(KEYS.papers, [...read<Paper[]>(KEYS.papers, []), paper]);
+  write(KEYS.questions, [...read<Question[]>(KEYS.questions, []), ...questions]);
+  write(KEYS.attempts, [...read<Attempt[]>(KEYS.attempts, []), ...attempts]);
 }
 
 // ---- Papers ----------------------------------------------------------------
@@ -301,6 +332,103 @@ export function getAllMistakes(): MistakeRecord[] {
     });
   }
   return out;
+}
+
+// ---- Battle review (light post-battle review, feeds the same memory) --------
+
+export interface BattleReviewItem {
+  q: string;
+  options: string[];
+  myPick: number;
+  answer: number;
+  explanation: string;
+  tag?: ErrorTag;
+}
+export interface BattleReview {
+  id: string; // challengeId
+  topic: string;
+  subject: Subject;
+  createdAt: number;
+  done: boolean;
+  items: BattleReviewItem[]; // only the questions I got wrong
+  paperId?: string; // set once completed, so an edit updates the same paper/insight
+  editCount?: number; // max 2 re-tags after the first submission
+}
+
+export function getBattleReviews(): BattleReview[] {
+  return Object.values(read<Record<string, BattleReview>>(KEYS.battleReviews, {}));
+}
+export function getBattleReview(id: string): BattleReview | undefined {
+  return read<Record<string, BattleReview>>(KEYS.battleReviews, {})[id];
+}
+export function getPendingBattleReviews(): BattleReview[] {
+  return getBattleReviews().filter((r) => !r.done && r.items.length > 0).sort((a, b) => b.createdAt - a.createdAt);
+}
+
+// Called right after a battle finishes. A perfect score has nothing to review
+// and is stored done, so the home card stays hidden.
+export function savePendingBattleReview(review: Omit<BattleReview, "createdAt" | "done">) {
+  const all = read<Record<string, BattleReview>>(KEYS.battleReviews, {});
+  if (all[review.id]) return; // replaying results must not resurrect a done review
+  all[review.id] = { ...review, createdAt: Date.now(), done: review.items.length === 0 };
+  write(KEYS.battleReviews, all);
+}
+
+// Finish (or re-tag) a review: the tagged mistakes become regular
+// paper/question/attempt records, so weak topics, progress trends, and the
+// coach's memory all learn from duels exactly like they learn from mock
+// papers. A completed review can be re-submitted up to 2 times (a wrong-tap
+// fix) — that reuses the same paperId so the insight regenerates in place
+// instead of creating a duplicate paper. Returns the paperId to redirect to,
+// or null if the edit limit is already used up.
+export function completeBattleReview(id: string, tags: (ErrorTag | undefined)[]): string | null {
+  const all = read<Record<string, BattleReview>>(KEYS.battleReviews, {});
+  const review = all[id];
+  if (!review) return null;
+  const isEdit = review.done;
+  if (isEdit && (review.editCount ?? 0) >= 2) return null;
+
+  const paperId = review.paperId ?? uid();
+  const questions: Question[] = [];
+  const attempts: Attempt[] = [];
+  review.items.forEach((item, i) => {
+    const qid = uid();
+    questions.push({
+      id: qid, paperId, number: i + 1,
+      text: item.q, subject: review.subject, topic: review.topic, state: "wrong",
+    });
+    attempts.push({
+      id: uid(), questionId: qid, paperId, state: "wrong",
+      selfTag: tags[i] ?? "concept",
+      transcript: `Duel answer: picked "${item.options[item.myPick] ?? "?"}", correct was "${item.options[item.answer] ?? "?"}".`,
+      createdAt: Date.now(),
+    });
+  });
+
+  // Drop any prior questions/attempts for this paper before writing the fresh set (edit path).
+  write(KEYS.questions, [...read<Question[]>(KEYS.questions, []).filter((q) => q.paperId !== paperId), ...questions]);
+  write(KEYS.attempts, [...read<Attempt[]>(KEYS.attempts, []).filter((a) => a.paperId !== paperId), ...attempts]);
+
+  const papers = read<Paper[]>(KEYS.papers, []);
+  if (papers.some((p) => p.id === paperId)) {
+    write(KEYS.papers, papers.map((p) => (p.id === paperId ? { ...p, questionCount: review.items.length } : p)));
+  } else {
+    const paper: Paper = { id: paperId, name: `⚔️ Duel: ${review.topic}`, createdAt: Date.now(), status: "done", questionCount: review.items.length };
+    write(KEYS.papers, [...papers, paper]);
+  }
+
+  review.done = true;
+  review.paperId = paperId;
+  review.editCount = isEdit ? (review.editCount ?? 0) + 1 : (review.editCount ?? 0);
+  review.items = review.items.map((it, i) => ({ ...it, tag: tags[i] ?? it.tag }));
+  write(KEYS.battleReviews, all);
+  return paperId;
+}
+
+// Skip-forever escape hatch (a done review disappears from the home card).
+export function dismissBattleReview(id: string) {
+  const all = read<Record<string, BattleReview>>(KEYS.battleReviews, {});
+  if (all[id]) { all[id].done = true; write(KEYS.battleReviews, all); }
 }
 
 export function getBattleProgress(): Record<string, BattleResult> {

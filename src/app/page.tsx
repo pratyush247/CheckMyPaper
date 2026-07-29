@@ -5,8 +5,9 @@ import { useMemo } from "react";
 import { BottomNav } from "@/components/BottomNav";
 import { ProfileButton } from "@/components/ProfileButton";
 import { Tile } from "@/components/Tile";
+import { DevSeed } from "@/components/DevSeed";
 import { TopBar, TrafficDot, AppLoading } from "@/components/ui";
-import { computeProfile, getAccount, getPapers } from "@/lib/store";
+import { computeProfile, getAccount, getPapers, getPendingBattleReviews, getWeakTopics } from "@/lib/store";
 import { useStoreVersion, useMounted } from "@/lib/useStore";
 import type { Paper } from "@/lib/types";
 
@@ -33,6 +34,8 @@ export default function Home() {
   const papers = useMemo(() => getPapers(), [v]);
   const profile = useMemo(() => computeProfile(), [v]);
   const account = useMemo(() => getAccount(), [v]);
+  const pendingReviews = useMemo(() => (mounted ? getPendingBattleReviews() : []), [v, mounted]);
+  const weakTopics = useMemo(() => (mounted ? getWeakTopics().slice(0, 3) : []), [v, mounted]);
 
   if (!mounted) return <AppLoading />;
 
@@ -45,6 +48,17 @@ export default function Home() {
       <TopBar
         left={<ProfileButton />}
         title={`Hey ${firstName} 👋`}
+        right={
+          <Link
+            href="/friends"
+            aria-label="Friends"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-line)] bg-[var(--color-card)]"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M16 11a3 3 0 1 0-2.83-4M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0 0c-2.7 0-5 1.6-5 4v1h10M15 20h6v-1c0-2.2-1.9-3.7-4.2-3.95" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </Link>
+        }
       />
 
       <div className="px-4">
@@ -55,10 +69,45 @@ export default function Home() {
         {/* Feature grid */}
         <div className="stagger grid grid-cols-2 gap-3">
           <Tile color="yellow" emoji="📄" label="Scan" value="Add paper" caption="Snap a mock & diagnose it" href="/papers/new" />
-          <Tile color="lime" emoji="⚔️" label="Play" value="Battle" caption="Beat your weak topics" href="/battle" />
+          <Tile color="lime" emoji="⚔️" label="Play" value="Duel" caption="Beat your weak topics" href="/battle" />
           <Tile color="purple" emoji="🧠" label="Ask" value="Coach" caption="Chat with your mistakes" href="/tutor" />
           <Tile color="sky" emoji="📊" label="Stats" value="Progress" caption="See your patterns grow" href="/progress" />
         </div>
+
+        {/* Revise hub — one calm, full-width tile. Headline = top weak topic
+            when there is one, else an open invite to browse the syllabus. */}
+        <Link href="/revise" className="mt-3 block transition-transform active:scale-[0.98]">
+          <div className="tile tile-pink">
+            <div className="flex items-start justify-between">
+              <span className="text-[0.7rem] font-extrabold uppercase tracking-wider opacity-80">Revise</span>
+              <span className="text-xl leading-none">🗂️</span>
+            </div>
+            <div className="font-display mt-1.5 text-xl font-bold leading-tight">
+              {weakTopics[0]?.topic ?? "Any topic, any time"}
+            </div>
+            <p className="mt-1 text-[0.72rem] font-semibold leading-snug opacity-75">
+              {weakTopics.length > 0
+                ? "Your weak areas + full syllabus — concepts, flashcards, mastery runs →"
+                : "Pick from the JEE syllabus — concepts, flashcards, mind maps, mastery runs →"}
+            </p>
+          </div>
+        </Link>
+
+        <DevSeed />
+
+        {/* Battle review pending — hidden when there's nothing to review */}
+        {pendingReviews.length > 0 && (
+          <Link href={`/battle/review/${pendingReviews[0].id}`} className="mt-3 block">
+            <div className="tile tile-purple">
+              <div className="flex items-center gap-2 text-[0.7rem] font-extrabold uppercase tracking-wider opacity-80">
+                ⚔️ Duel review pending
+              </div>
+              <p className="mt-1.5 text-[0.98rem] font-bold leading-snug">
+                {pendingReviews[0].items.length} mistake{pendingReviews[0].items.length === 1 ? "" : "s"} from {pendingReviews[0].topic} — tag them in ~2 min so your coach learns from this duel →
+              </p>
+            </div>
+          </Link>
+        )}
 
         {/* Pattern highlight */}
         {profile.totalDiagnosed > 0 && topTag && (

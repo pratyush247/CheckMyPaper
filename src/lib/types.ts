@@ -9,6 +9,8 @@
 export interface Account {
   name: string;
   phone: string; // 10-digit Indian mobile, digits only
+  klass?: string; // "Class 11" | "Class 12" | "Dropper" — used to pitch papers + seed the tutor's memory
+  weakSubject?: Subject; // the subject the student self-reports as hardest
   createdAt: number;
 }
 

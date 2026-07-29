@@ -8,6 +8,35 @@ import { getAllMistakes } from "@/lib/store";
 import { useMounted } from "@/lib/useStore";
 import { syncMistakes, tutorChat, type ChatTurn } from "@/lib/tutor";
 import { FeedbackThumbs } from "@/components/FeedbackThumbs";
+import { useRecorder } from "@/lib/recorder";
+
+// Mini markdown renderer for coach replies: **bold**, bullet lists, paragraphs.
+// ponytail: no markdown dependency for three constructs; swap for react-markdown if the coach ever needs tables/code.
+function Bold({ text }: { text: string }) {
+  const parts = text.split(/\*\*(.+?)\*\*/g);
+  return <>{parts.map((p, i) => (i % 2 ? <strong key={i}>{p}</strong> : p))}</>;
+}
+function Md({ text }: { text: string }) {
+  const blocks = text.replace(/\r/g, "").split(/\n{2,}/).filter((b) => b.trim());
+  return (
+    <div className="flex flex-col gap-2">
+      {blocks.map((block, bi) => {
+        const lines = block.split("\n").filter((l) => l.trim());
+        const isList = lines.every((l) => /^\s*([-*•]|\d+[.)])\s+/.test(l));
+        if (isList) {
+          return (
+            <ul key={bi} className="flex list-disc flex-col gap-1 pl-4">
+              {lines.map((l, li) => (
+                <li key={li}><Bold text={l.replace(/^\s*([-*•]|\d+[.)])\s+/, "")} /></li>
+              ))}
+            </ul>
+          );
+        }
+        return <p key={bi}><Bold text={lines.join(" ")} /></p>;
+      })}
+    </div>
+  );
+}
 
 const SUGGESTIONS = [
   "Why do I keep losing marks?",
@@ -43,8 +72,11 @@ export default function TutorPage() {
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  // Voice → transcript → sent straight to the coach, who answers in text.
+  const rec = useRecorder((text) => send(text));
 
-  // Sync the student's mistakes into the RAG store once on open.
+  // Sync the student's mistakes into the RAG store in the background — the
+  // chat is usable immediately, the memory just gets richer once sync lands.
   useEffect(() => {
     if (!mounted || mistakeCount === 0) return;
     syncMistakes().then((r) => {
@@ -99,34 +131,38 @@ export default function TutorPage() {
             </p>
             <div className="mt-3 flex flex-col gap-2">
               {SUGGESTIONS.map((s) => (
-                <button key={s} onClick={() => send(s)} className="chip justify-start" disabled={!ready}>
+                <button key={s} onClick={() => send(s)} className="chip justify-start">
                   {s}
                 </button>
               ))}
             </div>
-            {!ready && <p className="mt-2 text-xs text-[var(--color-violet-ink)]/80">Getting your mistakes ready…</p>}
+            {!ready && (
+              <p className="mt-2 animate-pulse text-xs font-semibold text-[var(--color-violet-ink)]/80">
+                🧠 Coach is building your memory — you can start asking already…
+              </p>
+            )}
             {configured === false && (
-              <p className="mt-2 text-xs font-medium text-[var(--color-bad)]">Tutor backend isn&apos;t configured.</p>
+              <p className="mt-2 text-xs font-medium text-[var(--color-bad)]">Coach is offline right now — try again in a bit.</p>
             )}
           </div>
         )}
 
         <div className="flex flex-col gap-3">
-          {messages.map((m, i) => (
-            <div
-              key={i}
-              className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-[0.95rem] leading-relaxed ${
-                m.role === "user"
-                  ? "self-end bg-[var(--color-violet)] text-white"
-                  : "self-start card whitespace-pre-wrap"
-              }`}
-            >
-              {m.content}
-            </div>
-          ))}
+          {messages.map((m, i) =>
+            m.role === "user" ? (
+              <div key={i} className="max-w-[85%] self-end rounded-2xl bg-[var(--color-violet)] px-4 py-2.5 text-[0.95rem] leading-relaxed text-white">
+                {m.content}
+              </div>
+            ) : (
+              // Coach replies are full-width cards, same language as the home screen.
+              <div key={i} className="card animate-fade-up w-full p-4 text-[0.95rem] leading-relaxed">
+                <Md text={m.content} />
+              </div>
+            ),
+          )}
           {thinking && (
-            <div className="card self-start rounded-2xl px-4 py-2.5 text-sm text-[var(--color-ink-soft)]">
-              thinking…
+            <div className="card w-full animate-pulse p-4 text-sm text-[var(--color-ink-soft)]">
+              🧠 Coach is thinking…
             </div>
           )}
         </div>
@@ -142,6 +178,7 @@ export default function TutorPage() {
         className="border-t border-[var(--color-line)] bg-[var(--color-paper)]/95 p-3 backdrop-blur"
         style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
       >
+        {rec.hint && <p className="mb-1 text-xs text-[var(--color-ink-soft)]">{rec.hint}</p>}
         <div className="flex items-end gap-2">
           <textarea
             value={input}
@@ -153,13 +190,27 @@ export default function TutorPage() {
               }
             }}
             rows={1}
-            placeholder="Ask your coach…"
-            disabled={!ready}
+            placeholder={rec.phase === "recording" ? `Listening… ${rec.seconds}s` : rec.phase === "transcribing" ? "Transcribing…" : "Ask your coach…"}
             className="max-h-28 min-h-[44px] flex-1 resize-none rounded-2xl border border-[var(--color-line)] bg-[var(--color-card)] px-4 py-2.5 text-sm outline-none focus:border-[var(--color-violet)]"
           />
           <button
+            onClick={rec.toggle}
+            disabled={rec.phase === "transcribing"}
+            className={`btn !h-11 !w-11 !p-0 ${rec.phase === "recording" ? "bg-[var(--color-bad)] text-white" : "btn-line"}`}
+            aria-label={rec.phase === "recording" ? "Stop recording" : "Talk to your coach"}
+          >
+            {rec.phase === "recording" ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="6" y="6" width="12" height="12" rx="3" fill="currentColor" /></svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor" />
+                <path d="M5 11a7 7 0 0 0 14 0M12 18v3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            )}
+          </button>
+          <button
             onClick={() => send(input)}
-            disabled={!ready || thinking || !input.trim()}
+            disabled={thinking || !input.trim()}
             className="btn btn-primary !h-11 !w-11 !p-0"
             aria-label="Send"
           >

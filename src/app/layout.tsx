@@ -1,12 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { RegisterSW } from "@/components/RegisterSW";
-
-// One clean geometric face for body + display — the refined, minimal feel of
-// the "liftoff" design language. Display weight/tracking is set in globals.css.
-const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-jakarta", display: "swap" });
 import { AuthGate } from "@/components/AuthGate";
+import { PullToRefresh } from "@/components/PullToRefresh";
 import { themeBootstrapScript } from "@/lib/theme";
 
 export const metadata: Metadata = {
@@ -30,12 +26,26 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={jakarta.variable}>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Load the UI font in the browser (non-blocking) rather than via
+            next/font, so the dev server / build never stall on a font fetch.
+            Offline, --font-sans falls back to the system stack in globals.css. */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body>
         {/* Apply saved/system theme before paint to avoid a flash. */}
         <script dangerouslySetInnerHTML={{ __html: themeBootstrapScript }} />
         <div className="app-shell">
-          <AuthGate>{children}</AuthGate>
+          {/* Global pull-to-refresh: drag down at the top of any page reloads it. */}
+          <PullToRefresh>
+            <AuthGate>{children}</AuthGate>
+          </PullToRefresh>
         </div>
         <RegisterSW />
       </body>

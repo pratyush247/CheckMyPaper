@@ -104,9 +104,10 @@ export default function InsightPage() {
                 ))}
             </div>
             {insight.weakestTopic && (
-              <p className="mt-4 rounded-xl bg-[var(--color-paper-2)] px-4 py-2.5 text-sm">
-                📌 Topic to revisit: <b>{insight.weakestTopic}</b>
-              </p>
+              <Link href={`/revise/${encodeURIComponent(insight.weakestTopic)}`} className="mt-4 flex items-center justify-between rounded-xl bg-[var(--color-paper-2)] px-4 py-2.5 text-sm">
+                <span>📌 Topic to revisit: <b>{insight.weakestTopic}</b></span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="shrink-0 text-[var(--color-violet)]"><path d="M9 5l7 7-7 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              </Link>
             )}
           </div>
         )}

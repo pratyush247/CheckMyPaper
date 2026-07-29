@@ -1,13 +1,18 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { TopBar, AppLoading } from "@/components/ui";
-import { Friends } from "@/components/Friends";
 import { FeedbackForm } from "@/components/FeedbackForm";
-import { clearAccount, computeProfile, getAccount } from "@/lib/store";
+import { clearAccount, computeProfile, getAccount, saveAccount } from "@/lib/store";
+import { saveProfile } from "@/lib/socialClient";
 import { useStoreVersion, useMounted } from "@/lib/useStore";
 import { useTheme } from "@/lib/theme";
+import type { Subject } from "@/lib/types";
+
+const CLASSES = ["Class 11", "Class 12", "Dropper"];
+const SUBJECTS: Subject[] = ["Physics", "Chemistry", "Maths"];
 
 function initials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -72,7 +77,15 @@ export default function ProfilePage() {
           </button>
         </div>
 
-        <Friends phone={account.phone} name={account.name} />
+        <StudyProfile phone={account.phone} name={account.name} klass={account.klass} weakSubject={account.weakSubject} />
+
+        <Link href="/friends" className="card mt-4 flex items-center justify-between p-4">
+          <span>
+            <span className="block text-sm font-bold">Friends &amp; squads 👥</span>
+            <span className="block text-xs text-[var(--color-ink-soft)]">Add friends, build a squad, challenge them.</span>
+          </span>
+          <span className="text-[var(--color-ink-soft)]">→</span>
+        </Link>
 
         <FeedbackForm />
 
@@ -81,6 +94,35 @@ export default function ProfilePage() {
         </button>
       </div>
     </main>
+  );
+}
+
+function StudyProfile({ phone, name, klass, weakSubject }: { phone: string; name: string; klass?: string; weakSubject?: Subject }) {
+  const [k, setK] = useState(klass ?? "");
+  const [w, setW] = useState<Subject | "">(weakSubject ?? "");
+  function set(nextK: string, nextW: Subject | "") {
+    setK(nextK);
+    setW(nextW);
+    saveAccount(name, phone, { klass: nextK || undefined, weakSubject: (nextW || undefined) as Subject | undefined });
+    saveProfile(phone, name, nextK || undefined, nextW || undefined).catch(() => {});
+  }
+  return (
+    <div className="card mt-4 p-4">
+      <h3 className="text-sm font-bold">Study profile</h3>
+      <p className="mt-0.5 text-xs text-[var(--color-ink-soft)]">Pitches challenge papers at your level — and helps your future coach.</p>
+      <p className="mb-1.5 mt-3 text-xs font-semibold">Class</p>
+      <div className="flex flex-wrap gap-2">
+        {CLASSES.map((c) => (
+          <button key={c} className="chip" data-on={k === c} onClick={() => set(c, w)}>{c}</button>
+        ))}
+      </div>
+      <p className="mb-1.5 mt-3 text-xs font-semibold">Toughest subject</p>
+      <div className="flex flex-wrap gap-2">
+        {SUBJECTS.map((s) => (
+          <button key={s} className="chip" data-on={w === s} onClick={() => set(k, s)}>{s}</button>
+        ))}
+      </div>
+    </div>
   );
 }
 

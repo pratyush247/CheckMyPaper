@@ -6,7 +6,8 @@ import { BottomNav } from "@/components/BottomNav";
 import { Tile } from "@/components/Tile";
 import { TopBar, EmptyState, AppLoading } from "@/components/ui";
 import { TAG_MAP, TAG_SHORT } from "@/lib/errorTags";
-import { computeProfile, getPapers } from "@/lib/store";
+import { computeProfile, getPapers, getAccount } from "@/lib/store";
+import { MyBattleStats } from "@/components/BattleStats";
 import { useStoreVersion, useMounted } from "@/lib/useStore";
 import type { ErrorTag } from "@/lib/types";
 
@@ -57,6 +58,9 @@ export default function ProgressPage() {
           <Tile color="sky" emoji="🔁" label="Focus" value={<span className="text-lg leading-tight">{focusTopic ?? "—"}</span>} caption="revise this next" />
         </div>
 
+        {/* Battle analytics across every squad + online play */}
+        <MyBattleStats phone={getAccount()?.phone ?? ""} />
+
         {/* Mistake mix */}
         <div className="card mt-5 p-5">
           <h3 className="mb-3 text-sm font-extrabold">Your mistake mix</h3>
@@ -105,12 +109,18 @@ export default function ProgressPage() {
             </p>
             <ul className="flex flex-col gap-2">
               {topicEntries.slice(0, 5).map(([topic, t]) => (
-                <li key={topic} className="flex items-center justify-between rounded-xl bg-[var(--color-paper-2)] px-4 py-2.5">
-                  <span className="text-sm font-semibold">{topic}</span>
-                  <span className="text-xs font-bold text-[var(--color-violet)]">{t.papers.length >= 2 ? `${t.papers.length} papers` : `${t.count}×`}</span>
+                <li key={topic}>
+                  <Link href={`/revise/${encodeURIComponent(topic)}`} className="flex items-center justify-between rounded-xl bg-[var(--color-paper-2)] px-4 py-2.5">
+                    <span className="text-sm font-semibold">{topic}</span>
+                    <span className="flex items-center gap-1.5 text-xs font-bold text-[var(--color-violet)]">
+                      {t.papers.length >= 2 ? `${t.papers.length} papers` : `${t.count}×`}
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                    </span>
+                  </Link>
                 </li>
               ))}
             </ul>
+            <p className="mt-2 text-xs text-[var(--color-ink-soft)]">Tap a topic → concepts, flashcards, mind map & mastery practice.</p>
           </div>
         )}
 

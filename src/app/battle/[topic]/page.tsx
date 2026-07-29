@@ -89,7 +89,7 @@ export default function BattleStagePage() {
       const res = await fetch("/api/quiz", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic, subject, n: QUIZ_SIZE }),
+        body: JSON.stringify({ topic, subject, n: QUIZ_SIZE, className: getAccount()?.klass }),
         signal: ctrl.signal,
       });
       const data = (await res.json()) as { questions?: QuizQuestion[] };

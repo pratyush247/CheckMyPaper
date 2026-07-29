@@ -16,7 +16,38 @@ export function supabase(): SupabaseClient {
   return _client;
 }
 
+// Push a realtime event to everyone subscribed to `topic` (Supabase Realtime
+// Broadcast over HTTP — stateless, so it works from serverless routes without
+// holding a websocket). Best-effort: a miss self-heals via focus refetch.
+export async function broadcast(topic: string, event: string, payload: unknown): Promise<void> {
+  if (!supabaseConfigured()) return;
+  try {
+    await fetch(`${URL}/realtime/v1/api/broadcast`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: SERVICE_KEY!,
+        Authorization: `Bearer ${SERVICE_KEY}`,
+      },
+      body: JSON.stringify({ messages: [{ topic, event, payload }] }),
+    });
+  } catch (err) {
+    console.error("broadcast error", err);
+  }
+}
+
 // Ensure a student row exists / name is current. Safe to call on every action.
-export async function upsertStudent(phone: string, name: string) {
-  await supabase().from("students").upsert({ phone, name }, { onConflict: "phone" });
+// Only overwrites class/weak_subject when explicitly provided, so a plain
+// (phone, name) call from another route never wipes the profile.
+export async function upsertStudent(phone: string, name: string, extra?: { klass?: string; weakSubject?: string }) {
+  const row: Record<string, string> = { phone, name };
+  if (extra?.klass) row.class = extra.klass;
+  if (extra?.weakSubject) row.weak_subject = extra.weakSubject;
+  await supabase().from("students").upsert(row, { onConflict: "phone" });
+}
+
+// The student's self-reported class, for pitching a curated paper at their level.
+export async function studentClass(phone: string): Promise<string | null> {
+  const { data } = await supabase().from("students").select("class").eq("phone", phone).maybeSingle();
+  return (data?.class as string | null) ?? null;
 }

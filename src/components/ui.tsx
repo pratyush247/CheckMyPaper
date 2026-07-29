@@ -37,6 +37,22 @@ export function TopBar({
   );
 }
 
+// Small round home shortcut for pages reached from deep flows (e.g. Friends
+// after a match), where the back arrow would just replay history.
+export function HomeButton() {
+  return (
+    <Link
+      href="/"
+      aria-label="Home"
+      className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-line)] bg-[var(--color-card)]"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+        <path d="M4 11l8-7 8 7v8a1.5 1.5 0 0 1-1.5 1.5H14v-6h-4v6H5.5A1.5 1.5 0 0 1 4 19v-8z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      </svg>
+    </Link>
+  );
+}
+
 export function TrafficDot({ light, size = 12 }: { light: "green" | "amber" | "red"; size?: number }) {
   const color = light === "green" ? "var(--color-good)" : light === "amber" ? "var(--color-warn)" : "var(--color-bad)";
   return <span style={{ width: size, height: size, background: color }} className="inline-block rounded-full" />;
